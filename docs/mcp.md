@@ -21,6 +21,7 @@ Important tools:
 
 - `semfs_initialize_identity`
 - `semfs_get_identity_status`
+- `semfs_prepare_inbound`
 - `semfs_get_manifest`
 - `semfs_get_agent`
 - `semfs_prepare_agent_action`

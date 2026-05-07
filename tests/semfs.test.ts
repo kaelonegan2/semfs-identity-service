@@ -72,6 +72,46 @@ describe("SemFS service", () => {
     expect(denied.allowed).toBe(false);
   });
 
+  it("prepares compact inbound packets", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    const container = createContainer();
+
+    const before = await container.inbound.prepare(container.registry.resolve("test-identity"), { message: "Hello" });
+    expect(before.state).toBe("uninitialized");
+
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const packet = await container.inbound.prepare(container.registry.resolve("test-identity"), {
+      message: "Hello",
+      owner_verified: false,
+    });
+
+    expect(packet.state).toBe("ready");
+    expect((packet.selected as Record<string, unknown>).route).toBe("clarify_intent");
+    expect((packet.selected as Record<string, unknown>).agent_id).toBe("owner_onboarding");
+    expect(JSON.stringify(packet)).not.toContain("baseline_internal_tools");
+    expect(JSON.stringify(packet)).toContain("Runtime User-Facing Guard");
+  });
+
+  it("serves compact inbound prep over REST", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const app = await createApp(container);
+
+    const inbound = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/inbound/prepare",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: { message: "How are you?" },
+    });
+
+    expect(inbound.statusCode).toBe(200);
+    expect(inbound.json().selected.route).toBe("clarify_intent");
+  });
+
   it("prepares dream packets and rejects activation-like findings", async () => {
     const root = await tempIdentityRoot();
     process.env.SEMFS_IDENTITY_PATH = root;

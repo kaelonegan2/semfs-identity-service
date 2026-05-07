@@ -5,6 +5,7 @@ export const ADMIN_SCOPES: AuthScope[] = [
   "identity:status",
   "identity:initialize",
   "identity:read",
+  "inbound:prepare",
   "agent:read",
   "agent:prepare",
   "agent:authorize",
@@ -25,6 +26,7 @@ export const OWNER_RUNTIME_SCOPES: AuthScope[] = ADMIN_SCOPES.filter((scope) => 
 export const RUNTIME_SCOPES: AuthScope[] = [
   "identity:status",
   "identity:read",
+  "inbound:prepare",
   "agent:read",
   "agent:prepare",
   "agent:authorize",
@@ -39,7 +41,7 @@ export const RUNTIME_SCOPES: AuthScope[] = [
   "dream:write",
 ];
 
-export const READONLY_SCOPES: AuthScope[] = ["identity:status", "identity:read", "agent:read", "memory:search"];
+export const READONLY_SCOPES: AuthScope[] = ["identity:status", "identity:read", "inbound:prepare", "agent:read", "memory:search"];
 
 export const PUBLIC_SCOPES: AuthScope[] = ["identity:status"];
 

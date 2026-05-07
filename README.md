@@ -159,6 +159,7 @@ Identity:
 
 - `POST /v1/identities/initialize`
 - `GET /v1/identities/:identity_id/status`
+- `POST /v1/identities/:identity_id/inbound/prepare`
 - `GET /v1/identities/:identity_id/manifest`
 - `GET /v1/identities/:identity_id/context`
 
@@ -215,6 +216,7 @@ Core tools:
 
 - `semfs_initialize_identity`
 - `semfs_get_identity_status`
+- `semfs_prepare_inbound`
 - `semfs_get_manifest`
 - `semfs_get_agent`
 - `semfs_prepare_agent_action`
@@ -235,9 +237,9 @@ A typical external agent flow is:
 
 1. Call `semfs_get_identity_status` to determine whether the identity is `ready`, `uninitialized`, or `incomplete`.
 2. If the identity is uninitialized and the runtime is configured to do so, call `semfs_initialize_identity`.
-3. Call `semfs_get_manifest` to understand the identity structure and lifecycle posture.
-4. Call `semfs_get_agent` for the internal identity agent it needs to act as or consult.
-5. Call `semfs_prepare_agent_action` with the intended task and available context.
+3. Call `semfs_prepare_inbound` to get a compact identity-aware packet for the inbound message.
+4. Call `semfs_get_manifest` or `semfs_get_agent` only when the compact packet is insufficient.
+5. Call `semfs_prepare_agent_action` with the intended task and available context when additional action prep is needed.
 6. Follow the returned prompts, policies, tool permissions, contracts, and memory guidance.
 7. Call `semfs_authorize_agent_action` before authority-bearing or tool-mediated work.
 8. Call `semfs_validate_agent_output` before saving or returning material outputs.

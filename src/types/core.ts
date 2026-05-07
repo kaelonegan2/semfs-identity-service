@@ -6,6 +6,7 @@ export type AuthScope =
   | "identity:status"
   | "identity:initialize"
   | "identity:read"
+  | "inbound:prepare"
   | "agent:read"
   | "agent:prepare"
   | "agent:authorize"

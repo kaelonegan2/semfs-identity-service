@@ -39,6 +39,8 @@ Tools: `repo_read`, `conversation_artifact_write`.
 
 Output contract: `owner_onboarding`. Facet emitted: `owner_onboarding`.
 
+Internal routing and facet fields are runtime-only. Use them to decide behavior, but do not print fields like `decision.routing.next` in the user-facing response.
+
 # Success criteria
 
 - Ask no more than two questions unless the owner explicitly wants detail.
@@ -63,7 +65,8 @@ Use short sections:
 - Decision Needed
 - Safe Default
 - Next Safe Step
-- `decision.routing.next`
+
+Do not include internal route names, contract fields, facet keys, or tool names in the user-facing response unless the owner/admin explicitly asks for implementation details.
 
 # Stop rules
 

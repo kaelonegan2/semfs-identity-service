@@ -43,6 +43,22 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
+  if (has("inbound:prepare")) server.tool(
+    "semfs_prepare_inbound",
+    "Prepare a compact identity-aware runtime packet for an arbitrary inbound message.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      message: z.string().optional(),
+      conversation_id: z.string().nullable().optional(),
+      owner_verified: z.boolean().optional(),
+      trust_level: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const mount = container.registry.resolve(identity_id);
+      return text(await container.inbound.prepare(mount, rest));
+    }
+  );
+
   if (has("identity:read")) server.tool(
     "semfs_get_manifest",
     "Read the SemFS identity manifest and active runtime surface.",

@@ -34,7 +34,7 @@ export class AgentService {
       roles_are_not_agents: true,
       prompt: {
         prompt_ref: promptRef,
-        system: promptText ?? "not_available",
+        system: this.withRuntimeUserFacingGuard(promptText),
         user: "not_available",
         note: "Seed repos may store one durable prompt file. SemFS exposes system/user slots so matured identities can separate them.",
       },
@@ -145,5 +145,10 @@ export class AgentService {
       `domain=${String(profile.business_or_function_domain ?? "unknown")}`,
       `audience=${String(profile.audience_or_market ?? "unknown")}`,
     ].join("; ");
+  }
+
+  private withRuntimeUserFacingGuard(promptText: string | null): string {
+    if (!promptText) return "not_available";
+    return `${promptText.trim()}\n\n# Runtime User-Facing Guard\n\nUse internal routes, contracts, facets, tool names, and policy fields to decide behavior, but do not print them in the final user-facing response unless the user is clearly asking as an owner/admin for implementation details.`;
   }
 }
