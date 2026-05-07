@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "trust-assertions.schema.json",
+  "title": "Runtime Trust Assertion",
+  "type": "object",
+  "required": ["identity_authority"],
+  "additionalProperties": false,
+  "properties": {
+    "identity_authority": {
+      "type": "object",
+      "required": ["owner_verified", "verification_level", "verification_source_class"],
+      "additionalProperties": false,
+      "properties": {
+        "owner_verified": { "type": "boolean" },
+        "role_assertions": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "verification_level": {
+          "type": "string",
+          "enum": ["unverified", "self_claimed", "runtime_asserted_role", "runtime_asserted_owner", "runtime_revoked_or_expired"]
+        },
+        "verification_source_class": {
+          "type": "string",
+          "enum": ["none", "untrusted_message_metadata", "trusted_runtime_adapter", "runtime_private_approval_system"]
+        },
+        "verification_details_ref": {
+          "type": "string",
+          "pattern": "^runtime-private://"
+        },
+        "expires_at": { "type": "string" }
+      }
+    }
+  }
+}

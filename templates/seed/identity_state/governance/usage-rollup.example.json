@@ -1,0 +1,15 @@
+{
+  "schema_version": "usage_rollup.seed.example.v1",
+  "identity_id": "solo-identity-seed",
+  "mode": "seed_runtime_available",
+  "routes": {
+    "owner_onboarding": {"model_calls": 1},
+    "context_collect": {"model_calls": 1},
+    "research_plan": {"model_calls": 1},
+    "knowledge_draft": {"model_calls": 1},
+    "capability_gap": {"model_calls": 1},
+    "capability_proposal": {"model_calls": 1},
+    "human_review": {"model_calls": 1},
+    "stop": {"model_calls": 0}
+  }
+}

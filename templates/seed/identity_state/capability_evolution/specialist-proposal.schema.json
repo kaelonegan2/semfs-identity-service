@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "specialist-proposal.schema.json",
+  "title": "Specialist Proposal",
+  "type": "object",
+  "required": ["specialist_id", "purpose", "scope", "knowledge_inputs", "outputs", "authority_limits", "evaluation", "activation_requirements", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "specialist_id": { "type": "string" },
+    "purpose": { "type": "string" },
+    "scope": { "type": "string" },
+    "knowledge_inputs": { "type": "array", "items": { "type": "string" } },
+    "outputs": { "type": "array", "items": { "type": "string" } },
+    "authority_limits": { "type": "array", "items": { "type": "string" } },
+    "tools": { "type": "array", "items": { "type": "string" } },
+    "evaluation": { "type": "array", "items": { "type": "string" } },
+    "activation_requirements": { "type": "array", "items": { "type": "string" } },
+    "status": { "type": "string", "enum": ["draft", "pending_approval", "approved", "activated", "rejected", "deferred"] }
+  }
+}

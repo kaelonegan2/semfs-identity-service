@@ -1,0 +1,22 @@
+{
+  "schema_version": "seed_orchestration_graph.v1",
+  "route_field": "decision.routing.next",
+  "active_routes": [
+    {"route": "owner_onboarding", "agent": "owner_onboarding"},
+    {"route": "context_collect", "agent": "context_collector"},
+    {"route": "clarify_intent", "agent": "owner_onboarding"},
+    {"route": "research_plan", "agent": "business_research_planner"},
+    {"route": "knowledge_draft", "agent": "knowledge_drafter"},
+    {"route": "capability_gap", "agent": "capability_gap_manager"},
+    {"route": "capability_proposal", "agent": "capability_proposal_writer"},
+    {"route": "human_review", "agent": "human_review"},
+    {"route": "stop", "agent": "stop"}
+  ],
+  "inactive_future_routes": [
+    "qualify_lead",
+    "service_qa",
+    "prepare_estimate_packet",
+    "prepare_work_packet",
+    "maintenance_followup"
+  ]
+}

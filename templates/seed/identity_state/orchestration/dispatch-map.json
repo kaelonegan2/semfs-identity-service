@@ -1,0 +1,184 @@
+{
+  "version": "2026-04-30.seed.normalized",
+  "route_field": "decision.routing.next",
+  "active_lifecycle_mode": "seed_runtime_available",
+  "dispatch_model": "lifecycle_mode_aware",
+  "lifecycle_modes": {
+    "seed_runtime_available": {
+      "description": "Initialized Solo identity routing. These are the only routes dispatchable in seed mode.",
+      "routes": {
+        "owner_onboarding": {
+          "agent_id": "owner_onboarding",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/owner-onboarding.md",
+          "output_contract": "owner_onboarding",
+          "facet_target": "owner_onboarding",
+          "trust_required": "verified_owner"
+        },
+        "context_collect": {
+          "agent_id": "context_collector",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/context-collector.md",
+          "output_contract": "context_summary",
+          "facet_target": "context_summary",
+          "trust_required": "verified_owner_or_human_reviewed_context"
+        },
+        "clarify_intent": {
+          "agent_id": "owner_onboarding",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/owner-onboarding.md",
+          "output_contract": "owner_onboarding",
+          "facet_target": "owner_onboarding",
+          "trust_required": "any_sender",
+          "notes": "Use for harmless ambiguity. Non-owner clarification must not mature the identity."
+        },
+        "research_plan": {
+          "agent_id": "business_research_planner",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/business-research-planner.md",
+          "output_contract": "research_plan",
+          "facet_target": "research_plan",
+          "trust_required": "verified_owner_or_internal_seed_agent"
+        },
+        "knowledge_draft": {
+          "agent_id": "knowledge_drafter",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/knowledge-drafter.md",
+          "output_contract": "knowledge_draft",
+          "facet_target": "knowledge_draft",
+          "trust_required": "verified_owner_or_internal_seed_agent"
+        },
+        "capability_gap": {
+          "agent_id": "capability_gap_manager",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/capability-gap-manager.md",
+          "output_contract": "capability_gap",
+          "facet_target": "capability_gap",
+          "trust_required": "verified_owner_or_internal_seed_agent"
+        },
+        "capability_proposal": {
+          "agent_id": "capability_proposal_writer",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/capability-proposal-writer.md",
+          "output_contract": "capability_proposal",
+          "facet_target": "capability_proposal",
+          "trust_required": "verified_owner_or_internal_seed_agent"
+        },
+        "human_review": {
+          "agent_id": "human_review",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/human-review.md",
+          "output_contract": "human_review",
+          "facet_target": "human_review",
+          "trust_required": "any_sender_when_risk_or_authority_boundary_exists"
+        },
+        "stop": {
+          "agent_id": "stop",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/stop.md",
+          "output_contract": "closeout",
+          "facet_target": "closeout",
+          "trust_required": "any_sender"
+        }
+      },
+      "inactive_proposed_future_routes": [
+        "qualify_lead",
+        "service_qa",
+        "prepare_estimate_packet",
+        "prepare_work_packet",
+        "maintenance_followup",
+        "payment_request",
+        "credential_binding",
+        "public_publish"
+      ]
+    },
+    "mid_state_reference_target": {
+      "description": "Reference-only target lifecycle mode for future maturation. No mid-state routes are dispatchable from this seed branch until owner-approved activation updates this canonical map.",
+      "routes": {}
+    },
+    "owner_authorized_evolution": {
+      "description": "Seed evolution uses seed routes such as capability_gap, capability_proposal, and human_review. No separate evolution routing is active at initialization.",
+      "routes": {}
+    }
+  },
+  "routes": {
+    "owner_onboarding": {
+      "agent_id": "owner_onboarding",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/owner-onboarding.md",
+      "output_contract": "owner_onboarding",
+      "facet_target": "owner_onboarding",
+      "trust_required": "verified_owner"
+    },
+    "context_collect": {
+      "agent_id": "context_collector",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/context-collector.md",
+      "output_contract": "context_summary",
+      "facet_target": "context_summary",
+      "trust_required": "verified_owner_or_human_reviewed_context"
+    },
+    "clarify_intent": {
+      "agent_id": "owner_onboarding",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/owner-onboarding.md",
+      "output_contract": "owner_onboarding",
+      "facet_target": "owner_onboarding",
+      "trust_required": "any_sender",
+      "notes": "Use for harmless ambiguity. Non-owner clarification must not mature the identity."
+    },
+    "research_plan": {
+      "agent_id": "business_research_planner",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/business-research-planner.md",
+      "output_contract": "research_plan",
+      "facet_target": "research_plan",
+      "trust_required": "verified_owner_or_internal_seed_agent"
+    },
+    "knowledge_draft": {
+      "agent_id": "knowledge_drafter",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/knowledge-drafter.md",
+      "output_contract": "knowledge_draft",
+      "facet_target": "knowledge_draft",
+      "trust_required": "verified_owner_or_internal_seed_agent"
+    },
+    "capability_gap": {
+      "agent_id": "capability_gap_manager",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/capability-gap-manager.md",
+      "output_contract": "capability_gap",
+      "facet_target": "capability_gap",
+      "trust_required": "verified_owner_or_internal_seed_agent"
+    },
+    "capability_proposal": {
+      "agent_id": "capability_proposal_writer",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/capability-proposal-writer.md",
+      "output_contract": "capability_proposal",
+      "facet_target": "capability_proposal",
+      "trust_required": "verified_owner_or_internal_seed_agent"
+    },
+    "human_review": {
+      "agent_id": "human_review",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/human-review.md",
+      "output_contract": "human_review",
+      "facet_target": "human_review",
+      "trust_required": "any_sender_when_risk_or_authority_boundary_exists"
+    },
+    "stop": {
+      "agent_id": "stop",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/stop.md",
+      "output_contract": "closeout",
+      "facet_target": "closeout",
+      "trust_required": "any_sender"
+    }
+  },
+  "compatibility_notes": [
+    "Runtimes should read this canonical file, then select the active lifecycle mode.",
+    "decision.routing.next remains the primary route primitive.",
+    "identity_state/orchestration/seed-dispatch-map.json is a legacy compatibility pointer only."
+  ]
+}

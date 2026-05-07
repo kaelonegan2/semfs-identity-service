@@ -1,0 +1,31 @@
+{
+  "schema_version": "tool_aliases.v1",
+  "canonical_tool_registry": "identity_state/registries/tools.json",
+  "rule": "Runtimes should normalize aliases to canonical tool ids before checking permissions.",
+  "aliases": {
+    "repo_write_proposed": "repo_write_proposal",
+    "vector_retrieve": "semfs_vector_retrieve",
+    "vector_upsert_proposed": "semfs_vector_upsert",
+    "structured_output_parser": "structured_output_validate",
+    "contract_hydrator": "facet_hydrate"
+  },
+  "canonical_names": [
+    "repo_read",
+    "repo_write_proposal",
+    "conversation_artifact_write",
+    "semfs_vector_retrieve",
+    "semfs_vector_upsert",
+    "facet_hydrate",
+    "structured_output_validate",
+    "usage_event_emit",
+    "human_review_packet_create",
+    "owner_approval_capture",
+    "capability_gap_record",
+    "capability_proposal_create"
+  ],
+  "notes": [
+    "Seed uses canonical baseline runtime tool ids.",
+    "Aliases exist so a future adapter can read mid-state or older prototype references deterministically.",
+    "An alias does not grant permission; permission still comes from tools.json and the selected agent registry entry."
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "version": "2026-04-30.seed",
+  "contracts": {
+    "planner_decision": {
+      "required": ["decision.routing.next", "orchestration.stage_plan", "orchestration.selected_agent", "trust.posture"],
+      "optional": ["facets.expected", "audit.notes"]
+    },
+    "owner_onboarding": {
+      "required": ["facets.owner_onboarding.recommendation", "facets.owner_onboarding.decision_needed", "facets.owner_onboarding.safe_default", "decision.routing.next"],
+      "optional": ["facets.owner_onboarding.owner_question", "facets.owner_onboarding.why", "facets.owner_onboarding.next_safe_step", "facets.context_summary", "facets.human_review"]
+    },
+    "context_summary": {
+      "required": ["facets.context_summary.known_facts", "facets.context_summary.assumptions", "facets.context_summary.unknowns", "decision.routing.next"],
+      "optional": ["facets.context_summary.recommended_safe_defaults", "facets.vector_upsert", "facets.research_plan", "facets.capability_gap"]
+    },
+    "research_plan": {
+      "required": ["facets.research_plan.objective", "facets.research_plan.public_questions", "facets.research_plan.owner_decisions", "decision.routing.next"],
+      "optional": ["facets.research_plan.source_notes", "facets.research_plan.risks_and_assumptions", "facets.vector_upsert", "facets.knowledge_draft", "facets.capability_gap"]
+    },
+    "knowledge_draft": {
+      "required": ["facets.knowledge_draft.items", "facets.knowledge_draft.review_status", "decision.routing.next"],
+      "optional": ["facets.knowledge_draft.source_basis", "facets.knowledge_draft.assumptions", "facets.knowledge_draft.review_questions", "facets.knowledge_draft.safe_default", "facets.vector_upsert", "facets.human_review", "facets.capability_gap"]
+    },
+    "capability_gap": {
+      "required": ["facets.capability_gap.gap", "facets.capability_gap.blocked_action", "facets.capability_gap.safe_default", "decision.routing.next"],
+      "optional": ["facets.capability_gap.risk", "facets.capability_gap.proposed_artifact", "facets.capability_proposal", "facets.vector_upsert", "facets.human_review"]
+    },
+    "capability_proposal": {
+      "required": ["facets.capability_proposal.name", "facets.capability_proposal.status", "facets.capability_proposal.owner_approval_question", "decision.routing.next"],
+      "optional": ["facets.capability_proposal.benefit", "facets.capability_proposal.required_runtime_support", "facets.capability_proposal.authority_limits", "facets.capability_proposal.activation_checklist", "facets.capability_proposal.safe_default", "facets.capability_gap", "facets.human_review", "facets.vector_upsert"]
+    },
+    "human_review": {
+      "required": ["facets.human_review.summary", "facets.human_review.decision_needed", "facets.human_review.safe_default", "decision.routing.next"],
+      "optional": ["facets.human_review.recommendation", "facets.human_review.risk_or_authority_issue", "facets.human_review.blocked_actions", "facets.human_review.approval_status", "facets.pending_approval", "facets.trust_issue"]
+    },
+    "usage_event": {
+      "runtime_emitted": true,
+      "required": ["facets.usage_event.identity_id", "facets.usage_event.route", "facets.usage_event.agent_id"],
+      "optional": ["facets.usage_event.tool_ids", "facets.usage_event.cost_class"]
+    },
+    "closeout": {
+      "required": ["facets.closeout.final_status"],
+      "optional": ["facets.closeout.reason", "facets.vector_upsert"]
+    }
+  }
+}

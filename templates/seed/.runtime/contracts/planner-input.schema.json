@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "planner-input.schema.json",
+  "title": "Planner Input",
+  "type": "object",
+  "required": ["contract_refs", "message_summary", "policy_refs", "route_options"],
+  "additionalProperties": false,
+  "properties": {
+    "contract_refs": { "type": "object" },
+    "message_summary": { "type": "string" },
+    "identity_context_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "policy_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "route_options": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "available_tools": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "lifecycle": { "type": "object" },
+    "identity_authority": { "type": "object" },
+    "usage_summary": { "type": "object" },
+    "vector_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "vector_context": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["namespace", "summary", "content_ref", "privacy_class"],
+        "additionalProperties": true,
+        "properties": {
+          "namespace": { "type": "string" },
+          "summary": { "type": "string" },
+          "content_ref": { "type": "string" },
+          "privacy_class": { "type": "string" },
+          "source_path": { "type": "string" }
+        }
+      }
+    },
+    "compact_context": { "type": "object" }
+  }
+}

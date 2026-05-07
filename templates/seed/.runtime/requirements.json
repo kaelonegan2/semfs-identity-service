@@ -1,0 +1,81 @@
+{
+  "schema_version": "runtime_requirements.v1",
+  "identity_repo_model": "semfs_identity_os.seed.v1",
+  "identity_id": "solo-identity-seed",
+  "lifecycle_mode": "seed_runtime_available",
+  "route_field": "decision.routing.next",
+  "minimum_compatible_runtime": {
+    "description": "A safe baseline Solo-style runtime that can help a seed identity mature itself without live business integrations.",
+    "required_capabilities": [
+      "read_identity_repo_files",
+      "resolve_repo_refs",
+      "resolve_prompt_refs",
+      "load_seed_dispatch_map",
+      "dispatch_by_decision_routing_next",
+      "compile_common_prep",
+      "compile_planner_input",
+      "compile_agent_input",
+      "hydrate_facets_into_runtime_contract",
+      "validate_structured_outputs",
+      "write_safe_repo_artifacts",
+      "write_conversation_current_status",
+      "read_semfs_vector_refs_through_policy",
+      "upsert_semfs_vector_summaries_through_policy",
+      "emit_usage_events",
+      "create_human_review_packets",
+      "capture_owner_approvals",
+      "record_capability_gaps",
+      "draft_capability_proposals",
+      "enforce_trust_and_authority_boundaries",
+      "block_external_side_effects_without_approval"
+    ]
+  },
+  "optional_enhanced_runtime": {
+    "capabilities": [
+      "public_web_research",
+      "source_quality_check",
+      "temporary_public_review_site_create",
+      "survey_result_ingest",
+      "credential_binding_request",
+      "payment_provider_binding_request",
+      "email_draft_prepare"
+    ],
+    "note": "Optional tools may prepare drafts or setup requests. They are not live production authority."
+  },
+  "mature_runtime_future_capabilities": [
+    "approved_live_external_messaging",
+    "approved_calendar_or_scheduling_tools",
+    "approved_system_of_record_tools",
+    "approved_payment_provider_tools",
+    "approved_public_site_publishing",
+    "advanced_specialist_orchestration",
+    "eval_backed_capability_activation"
+  ],
+  "forbidden_contract_payloads": [
+    "full_identity_repo",
+    "full_prompt_library",
+    "full_registries",
+    "full_graph",
+    "raw_vector_records",
+    "raw_transcripts",
+    "private_audience_or_account_records",
+    "credentials",
+    "payment_tokens",
+    "private_pricing_rules"
+  ],
+  "approval_required_for": [
+    "external_send",
+    "final_pricing",
+    "scheduling_commitment",
+    "payment_request",
+    "credential_binding",
+    "spend",
+    "public_publish",
+    "policy_activation",
+    "new_agent_activation",
+    "tool_activation",
+    "specialist_activation",
+    "capability_activation",
+    "lifecycle_mode_change"
+  ]
+}

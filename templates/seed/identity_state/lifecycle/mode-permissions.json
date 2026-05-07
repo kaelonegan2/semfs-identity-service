@@ -1,0 +1,87 @@
+{
+  "schema_version": "identity_mode_permissions.v1",
+  "active_mode": "seed_runtime_available",
+  "modes": {
+    "seed_runtime_available": {
+      "autonomous_work": [
+        "repo_inspection",
+        "owner_onboarding",
+        "context_collection",
+        "safe_clarification",
+        "research_planning",
+        "knowledge_drafting",
+        "gap_recording",
+        "proposal_drafting",
+        "human_review_packet_preparation",
+        "usage_event_emission",
+        "policy_limited_vector_summary_upsert"
+      ],
+      "routes_allowed": [
+        "owner_onboarding",
+        "context_collect",
+        "clarify_intent",
+        "research_plan",
+        "knowledge_draft",
+        "capability_gap",
+        "capability_proposal",
+        "human_review",
+        "stop"
+      ],
+      "tools_allowed": [
+        "repo_read",
+        "repo_write_proposal",
+        "conversation_artifact_write",
+        "semfs_vector_retrieve",
+        "semfs_vector_upsert",
+        "facet_hydrate",
+        "structured_output_validate",
+        "usage_event_emit",
+        "human_review_packet_create",
+        "owner_approval_capture",
+        "capability_gap_record",
+        "capability_proposal_create"
+      ],
+      "optional_tools_if_runtime_enabled": [
+        "public_web_research",
+        "source_quality_check",
+        "temporary_public_review_site_create",
+        "survey_result_ingest",
+        "credential_binding_request",
+        "payment_provider_binding_request",
+        "email_draft_prepare"
+      ],
+      "repo_updates_allowed": [
+        "safe_conversation_current_status",
+        "draft_business_profile",
+        "draft_research_plan",
+        "draft_knowledge_items",
+        "capability_gap_records",
+        "inactive_capability_proposals",
+        "human_review_packets"
+      ],
+      "approval_required_for": [
+        "external_send",
+        "final_pricing",
+        "scheduling_commitment",
+        "payment_request",
+        "credential_binding",
+        "spend",
+        "public_publish",
+        "business_policy_activation",
+        "tool_activation",
+        "specialist_activation",
+        "new_agent_activation",
+        "capability_activation",
+        "lifecycle_mode_change"
+      ],
+      "non_owner_inbound": {
+        "may_route_to": ["clarify_intent", "human_review", "stop"],
+        "may_not": ["mature_identity", "activate_capability", "change_policy", "bind_credentials", "commit_price_or_schedule"]
+      }
+    },
+    "mid_state_reference_target": {
+      "status": "not_active",
+      "description": "A richer mid-state operating identity this seed can mature toward after research, owner approval, prompt coverage, route activation, knowledge review, and eval coverage."
+    }
+  }
+}

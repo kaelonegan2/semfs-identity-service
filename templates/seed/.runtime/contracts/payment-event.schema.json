@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "payment-event.schema.json",
+  "title": "Payment Event",
+  "type": "object",
+  "required": ["event_id", "request_id", "event_type", "timestamp", "runtime_private_payment_ref"],
+  "additionalProperties": false,
+  "properties": {
+    "event_id": { "type": "string" },
+    "request_id": { "type": "string" },
+    "event_type": { "type": "string", "enum": ["created", "sent", "paid", "failed", "expired", "cancelled", "refunded"] },
+    "timestamp": { "type": "string" },
+    "runtime_private_payment_ref": { "type": "string", "pattern": "^runtime-private://" },
+    "safe_summary": { "type": "string" }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": "seed_evolution_agents.v1",
+  "registry_scope": "seed_runtime_available",
+  "dispatch_field": "decision.routing.next",
+  "owner_authorization_required_for_activation": true,
+  "agents": [
+    {"id": "identity_evolution_manager", "status": "active_seed", "may_propose": ["maturation_steps", "capability_proposals", "eval_improvements"], "may_activate": []},
+    {"id": "context_collector", "status": "active_seed", "may_propose": ["profile_drafts", "unknowns", "safe_defaults"], "may_activate": []},
+    {"id": "business_research_planner", "status": "active_seed", "may_propose": ["research_plans", "source_lists", "research_summaries"], "may_activate": []},
+    {"id": "knowledge_drafter", "status": "active_seed", "may_propose": ["faq_candidates", "service_candidates", "policy_drafts"], "may_activate": []},
+    {"id": "capability_gap_manager", "status": "active_seed", "may_propose": ["gap_records", "safe_defaults"], "may_activate": []},
+    {"id": "capability_proposal_writer", "status": "active_seed", "may_propose": ["inactive_capability_proposals"], "may_activate": []},
+    {"id": "owner_review_coordinator", "status": "active_seed", "may_propose": ["review_packets", "approval_records"], "may_activate": []}
+  ]
+}

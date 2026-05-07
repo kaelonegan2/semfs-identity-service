@@ -1,0 +1,50 @@
+{
+  "schema_version": "seed_stage_model.v1",
+  "route_field": "decision.routing.next",
+  "lifecycle_mode": "seed_runtime_available",
+  "stages": [
+    {
+      "id": "verify_trust",
+      "purpose": "Classify sender as verified owner, internal runtime, human reviewer, or non-owner.",
+      "may_set_decision_routing_next": false
+    },
+    {
+      "id": "understand_intent",
+      "purpose": "Classify setup, context, research, knowledge draft, gap, proposal, review, or stop.",
+      "may_set_decision_routing_next": false
+    },
+    {
+      "id": "select_seed_route",
+      "purpose": "Select an active seed route from dispatch-map.json.",
+      "candidate_agents": ["runtime_orchestration_planner"],
+      "may_set_decision_routing_next": true
+    },
+    {
+      "id": "dispatch_seed_agent",
+      "purpose": "Resolve route to registered active seed agent, prompt, tools, and output contract.",
+      "may_set_decision_routing_next": false
+    },
+    {
+      "id": "produce_seed_facet",
+      "purpose": "Run the selected seed agent and produce a validated seed facet.",
+      "candidate_agents": ["owner_onboarding", "context_collector", "business_research_planner", "knowledge_drafter", "capability_gap_manager", "capability_proposal_writer", "human_review", "stop"],
+      "may_set_decision_routing_next": true
+    },
+    {
+      "id": "hydrate",
+      "purpose": "Validate structured output and hydrate allowed facets into the runtime contract.",
+      "may_set_decision_routing_next": false
+    },
+    {
+      "id": "persist_safe_artifacts",
+      "purpose": "Write safe conversation artifacts and policy-allowed repo/vector summaries.",
+      "may_set_decision_routing_next": false
+    },
+    {
+      "id": "approval_or_closeout",
+      "purpose": "Create human review packet for authority-bearing actions or stop safely.",
+      "candidate_agents": ["owner_review_coordinator", "human_review", "stop"],
+      "may_set_decision_routing_next": true
+    }
+  ]
+}

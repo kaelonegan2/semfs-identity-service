@@ -1,0 +1,59 @@
+{
+  "status_version": "2026-04-30.seed.2",
+  "mode": "seed_runtime_available",
+  "identity_repo_role": "initialized_semfs_identity_package",
+  "identity": {
+    "id": "solo-identity-seed",
+    "display_name": "Initialized Solo Identity",
+    "domain": "unknown_pending_owner_input_or_research",
+    "context_depth": "seed_under_contextualized"
+  },
+  "allowed_now": [
+    "inspect_identity_repo",
+    "owner_onboarding",
+    "safe_context_collection",
+    "draft_research_plan",
+    "draft_knowledge_candidates",
+    "record_capability_gaps",
+    "draft_inactive_capability_proposals",
+    "prepare_human_review_packets",
+    "write_safe_conversation_status",
+    "upsert_policy_allowed_summaries"
+  ],
+  "requires_human_approval": [
+    "external_send",
+    "final_pricing_or_commitment",
+    "scheduling_or_capacity_commitment",
+    "payment_request",
+    "credential_binding",
+    "spend",
+    "public_publish",
+    "policy_activation",
+    "new_agent_activation",
+    "tool_activation",
+    "specialist_activation",
+    "capability_activation",
+    "lifecycle_mode_change"
+  ],
+  "forbidden": [
+    "store_raw_pii_in_repo",
+    "expose_private_vector_content",
+    "invent_domain_facts",
+    "promise_availability",
+    "self_activate_new_capabilities",
+    "mature_identity_from_non_owner_inbound",
+    "bypass_owner_verification"
+  ],
+  "canonical_paths": {
+    "lifecycle": "identity_state/lifecycle/current.json",
+    "profile": "identity_state/profile/current.json",
+    "agents": "identity_state/registries/agents.json",
+    "tools": "identity_state/registries/tools.json",
+    "dispatch_map": "identity_state/orchestration/dispatch-map.json",
+    "facet_policy": "identity_state/registries/facet-policy.json",
+    "vector_namespace_map": "identity_state/memory/vector-namespaces.json",
+    "common_prep_schema": ".runtime/contracts/common-prep.schema.json",
+    "tool_aliases": "identity_state/registries/tool-aliases.json",
+    "namespace_maturation_map": "identity_state/memory/namespace-maturation-map.json"
+  }
+}

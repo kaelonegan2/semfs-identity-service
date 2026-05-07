@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "human-review-packet.schema.json",
+  "title": "Human Review Packet",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "review_id",
+    "conversation_id",
+    "run_id",
+    "requested_action",
+    "approval_type",
+    "required_role",
+    "decision_needed",
+    "artifact_refs",
+    "repo_refs",
+    "authority_refs",
+    "recommended_resume",
+    "audit"
+  ],
+  "properties": {
+    "review_id": { "type": "string" },
+    "conversation_id": { "type": "string" },
+    "run_id": { "type": "string" },
+    "requested_action": { "type": "string" },
+    "approval_type": { "type": "string" },
+    "required_role": { "type": "string" },
+    "decision_needed": { "type": "string" },
+    "draft_or_packet_ref": { "type": "string" },
+    "artifact_refs": { "type": "array", "items": { "type": "string" } },
+    "repo_refs": { "type": "array", "items": { "type": "string" } },
+    "vector_refs": { "type": "array", "items": { "type": "string" } },
+    "authority_refs": { "type": "array", "items": { "type": "string" } },
+    "usage_summary": { "type": "object" },
+    "risk_summary": { "type": "string" },
+    "expires_at": { "type": ["string", "null"] },
+    "recommended_resume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["on_approved", "on_rejected", "on_changes_requested", "on_expired"],
+      "properties": {
+        "on_approved": { "type": "string" },
+        "on_rejected": { "type": "string" },
+        "on_changes_requested": { "type": "string" },
+        "on_expired": { "type": "string" }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["created_by", "created_at", "trust_assertion_ref"],
+      "properties": {
+        "created_by": { "type": "string" },
+        "created_at": { "type": "string" },
+        "trust_assertion_ref": { "type": "string" }
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "payment-request.schema.json",
+  "title": "Payment Request",
+  "type": "object",
+  "required": ["request_id", "purpose", "amount_status", "approval_ref", "credential_alias", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "request_id": { "type": "string" },
+    "purpose": { "type": "string" },
+    "amount_status": { "type": "string", "enum": ["pending_approval", "approved_amount", "variable_runtime_calculated"] },
+    "amount": { "type": "number" },
+    "currency": { "type": "string" },
+    "conversation_id": { "type": "string" },
+    "approval_ref": { "type": "string" },
+    "credential_alias": { "type": "string" },
+    "expires_at": { "type": "string" },
+    "runtime_private_payment_ref": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "pending_approval", "approved", "created_by_runtime", "paid", "failed", "expired", "cancelled"] }
+  }
+}

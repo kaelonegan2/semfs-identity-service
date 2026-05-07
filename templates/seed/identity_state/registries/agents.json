@@ -1,0 +1,129 @@
+{
+  "version": "2026-04-30.seed",
+  "registry_scope": "seed_runtime_available",
+  "dispatch_field": "decision.routing.next",
+  "agents": [
+    {
+      "id": "runtime_orchestration_planner",
+      "status": "active",
+      "class": "internal_runtime_agent",
+      "prompt_ref": "identity_state/prompts/agents/runtime-orchestration-planner.md",
+      "tools": ["repo_read", "structured_output_validate", "facet_hydrate", "usage_event_emit"],
+      "output_contract": "planner_decision",
+      "facet_target": "none_runtime_decision_only",
+      "emits_facet": false,
+      "authority_limits": ["no_external_side_effects", "no_capability_activation"]
+    },
+    {
+      "id": "identity_evolution_manager",
+      "status": "active",
+      "class": "seed_maturation_agent",
+      "prompt_ref": "identity_state/prompts/agents/identity-evolution-manager.md",
+      "tools": ["repo_read", "repo_write_proposal", "semfs_vector_retrieve", "capability_gap_record", "capability_proposal_create"],
+      "output_contract": "capability_proposal",
+      "facet_target": "capability_proposal",
+      "authority_limits": ["draft_only", "approval_required_for_activation"]
+    },
+    {
+      "id": "owner_onboarding",
+      "status": "active",
+      "class": "seed_owner_agent",
+      "prompt_ref": "identity_state/prompts/agents/owner-onboarding.md",
+      "tools": ["repo_read", "conversation_artifact_write"],
+      "output_contract": "owner_onboarding",
+      "facet_target": "owner_onboarding",
+      "authority_limits": ["plain_language_questions_only", "no_technical_owner_questions"]
+    },
+    {
+      "id": "context_collector",
+      "status": "active",
+      "class": "seed_context_agent",
+      "prompt_ref": "identity_state/prompts/agents/context-collector.md",
+      "tools": ["repo_read", "conversation_artifact_write", "semfs_vector_upsert"],
+      "output_contract": "context_summary",
+      "facet_target": "context_summary",
+      "authority_limits": ["summaries_only", "separate_fact_from_assumption"]
+    },
+    {
+      "id": "business_research_planner",
+      "status": "active",
+      "class": "seed_research_agent",
+      "prompt_ref": "identity_state/prompts/agents/business-research-planner.md",
+      "tools": ["repo_read", "repo_write_proposal", "semfs_vector_retrieve", "semfs_vector_upsert"],
+      "optional_tools": ["public_web_research", "source_quality_check"],
+      "output_contract": "research_plan",
+      "facet_target": "research_plan",
+      "authority_limits": ["plan_or_summarize_only", "do_not_claim_unperformed_research"]
+    },
+    {
+      "id": "knowledge_drafter",
+      "status": "active",
+      "class": "seed_knowledge_agent",
+      "prompt_ref": "identity_state/prompts/agents/knowledge-drafter.md",
+      "tools": ["repo_read", "repo_write_proposal", "semfs_vector_retrieve", "semfs_vector_upsert"],
+      "output_contract": "knowledge_draft",
+      "facet_target": "knowledge_draft",
+      "authority_limits": ["draft_pending_review", "no_final_policy_or_pricing"]
+    },
+    {
+      "id": "capability_gap_manager",
+      "status": "active",
+      "class": "seed_evolution_agent",
+      "prompt_ref": "identity_state/prompts/agents/capability-gap-manager.md",
+      "tools": ["repo_read", "repo_write_proposal", "capability_gap_record", "semfs_vector_upsert"],
+      "output_contract": "capability_gap",
+      "facet_target": "capability_gap",
+      "authority_limits": ["record_gap_only", "no_activation"]
+    },
+    {
+      "id": "capability_proposal_writer",
+      "status": "active",
+      "class": "seed_evolution_agent",
+      "prompt_ref": "identity_state/prompts/agents/capability-proposal-writer.md",
+      "tools": ["repo_read", "repo_write_proposal", "capability_proposal_create", "human_review_packet_create"],
+      "output_contract": "capability_proposal",
+      "facet_target": "capability_proposal",
+      "authority_limits": ["inactive_proposal_only", "approval_required_for_activation"]
+    },
+    {
+      "id": "owner_review_coordinator",
+      "status": "active",
+      "class": "seed_review_agent",
+      "prompt_ref": "identity_state/prompts/agents/owner-review-coordinator.md",
+      "invocation": "approval_capture_internal_or_human_review_route",
+      "tools": ["repo_read", "human_review_packet_create", "owner_approval_capture", "conversation_artifact_write"],
+      "output_contract": "human_review",
+      "facet_target": "human_review",
+      "authority_limits": ["capture_decision_only", "no_self_activation"]
+    },
+    {
+      "id": "human_review",
+      "status": "active",
+      "class": "internal_review_agent",
+      "prompt_ref": "identity_state/prompts/agents/human-review.md",
+      "tools": ["repo_read", "human_review_packet_create", "usage_event_emit"],
+      "output_contract": "human_review",
+      "facet_target": "human_review",
+      "authority_limits": ["review_packet_only"]
+    },
+    {
+      "id": "stop",
+      "status": "active",
+      "class": "internal_control_agent",
+      "prompt_ref": "identity_state/prompts/agents/stop.md",
+      "tools": ["repo_read", "usage_event_emit"],
+      "output_contract": "closeout",
+      "facet_target": "closeout",
+      "authority_limits": ["no_side_effects"]
+    }
+  ],
+  "inactive_future_agents": [
+    "qualify_lead",
+    "service_qa",
+    "prepare_estimate_packet",
+    "prepare_work_packet",
+    "maintenance_followup",
+    "payment_coordinator",
+    "customer_property_memory_specialist"
+  ]
+}

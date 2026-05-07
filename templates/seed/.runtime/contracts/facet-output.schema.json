@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "semfs.seed.facet-output.schema.json",
+  "title": "Seed Facet Output",
+  "type": "object",
+  "required": ["decision", "facets"],
+  "properties": {
+    "decision": {
+      "type": "object",
+      "required": ["routing"],
+      "properties": {
+        "routing": {
+          "type": "object",
+          "required": ["next"],
+          "properties": {
+            "next": {
+              "type": "string",
+              "enum": ["owner_onboarding", "context_collect", "clarify_intent", "research_plan", "knowledge_draft", "capability_gap", "capability_proposal", "human_review", "stop"]
+            }
+          }
+        }
+      }
+    },
+    "facets": {
+      "type": "object",
+      "properties": {
+        "owner_onboarding": {"type": "object"},
+        "context_summary": {"type": "object"},
+        "research_plan": {"type": "object"},
+        "knowledge_draft": {"type": "object"},
+        "capability_gap": {"type": "object"},
+        "capability_proposal": {"type": "object"},
+        "human_review": {"type": "object"},
+        "usage_event": {"type": "object"},
+        "closeout": {"type": "object"}
+      },
+      "additionalProperties": false
+    },
+    "audit": {"type": "object"},
+    "return_status": {"type": "string"}
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,27 @@
+{
+  "version": "2026-04-30.seed",
+  "agent_classes": [
+    {
+      "id": "internal_runtime_agent",
+      "description": "Runtime planning, validation, review, or closeout surface.",
+      "activation": "available_in_minimum_compatible_runtime"
+    },
+    {
+      "id": "seed_maturation_agent",
+      "description": "Drafts context, research, knowledge, gaps, and proposals without business authority.",
+      "activation": "active_in_seed_runtime_available"
+    },
+    {
+      "id": "future_business_agent",
+      "description": "Customer or operations agent proposed for later activation.",
+      "activation": "owner_approval_plus_registry_prompt_eval_runtime_support"
+    }
+  ],
+  "rules": {
+    "arbitrary_dynamic_creation_default": false,
+    "all_agents_emit_facets": true,
+    "meaningful_outputs_upsert_to_repo_or_vector_memory_when_policy_allows": true,
+    "private_context_uses_vector_refs": true,
+    "seed_agents_do_not_activate_future_agents": true
+  }
+}

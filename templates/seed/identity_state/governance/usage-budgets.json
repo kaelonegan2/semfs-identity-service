@@ -1,0 +1,64 @@
+{
+  "schema_version": "usage_budgets.v1",
+  "currency": "USD",
+  "budget_classes": {
+    "planner_small": {
+      "input_tokens_warn": 4000,
+      "output_tokens_warn": 1200,
+      "tool_calls_warn": 3,
+      "on_warn": "continue"
+    },
+    "agent_standard": {
+      "input_tokens_warn": 9000,
+      "output_tokens_warn": 2500,
+      "tool_calls_warn": 5,
+      "on_warn": "warn"
+    },
+    "agent_high_context": {
+      "input_tokens_warn": 16000,
+      "output_tokens_warn": 4000,
+      "tool_calls_warn": 8,
+      "on_warn": "warn"
+    },
+    "review_small": {
+      "input_tokens_warn": 6000,
+      "output_tokens_warn": 1800,
+      "tool_calls_warn": 2,
+      "on_warn": "continue"
+    },
+    "closeout_tiny": {
+      "input_tokens_warn": 2500,
+      "output_tokens_warn": 800,
+      "tool_calls_warn": 1,
+      "on_warn": "continue"
+    }
+  },
+  "conversation_thresholds": {
+    "model_calls_warn": 8,
+    "model_calls_require_approval": 14,
+    "vector_retrievals_warn": 6,
+    "tool_calls_warn": 12,
+    "estimated_cost_usd_warn": 3.0,
+    "estimated_cost_usd_require_approval": 8.0,
+    "on_warn": "warn",
+    "on_require_approval": "require_approval"
+  },
+  "daily_identity_thresholds": {
+    "model_calls_warn": 100,
+    "estimated_cost_usd_warn": 25.0,
+    "estimated_cost_usd_require_owner": 75.0,
+    "on_warn": "warn",
+    "on_require_owner": "escalate_to_owner"
+  },
+  "monthly_identity_thresholds": {
+    "estimated_cost_usd_warn": 300.0,
+    "estimated_cost_usd_require_owner": 750.0,
+    "on_warn": "warn",
+    "on_require_owner": "escalate_to_owner"
+  },
+  "hard_stops": {
+    "repeated_same_route_without_new_context": 2,
+    "unapproved_outbound_send_attempts": 0,
+    "owner_level_action_without_verified_owner": 0
+  }
+}

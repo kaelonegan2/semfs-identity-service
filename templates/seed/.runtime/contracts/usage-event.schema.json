@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "usage-event.schema.json",
+  "title": "Usage Event",
+  "type": "object",
+  "required": ["schema_version", "event_id", "identity_id", "conversation_id", "run_id", "timestamp", "stage", "event_type", "threshold_status"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "type": "string" },
+    "event_id": { "type": "string" },
+    "identity_id": { "type": "string" },
+    "conversation_id": { "type": "string" },
+    "run_id": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "stage": { "type": "string" },
+    "route": { "type": ["string", "null"] },
+    "agent_id": { "type": ["string", "null"] },
+    "role": { "type": ["string", "null"] },
+    "event_type": {
+      "type": "string",
+      "enum": ["model_call", "tool_call", "vector_retrieval", "vector_upsert_attempt", "repo_write_attempt", "workflow_call", "outbound_send_attempt", "human_review_event", "approval_result"]
+    },
+    "model": { "type": ["string", "null"] },
+    "input_tokens_estimate": { "type": "integer", "minimum": 0 },
+    "output_tokens_estimate": { "type": "integer", "minimum": 0 },
+    "tool_id": { "type": ["string", "null"] },
+    "tool_call_count": { "type": "integer", "minimum": 0 },
+    "vector_retrieval_count": { "type": "integer", "minimum": 0 },
+    "estimated_cost_usd": { "type": "number", "minimum": 0 },
+    "budget_class": { "type": ["string", "null"] },
+    "threshold_status": {
+      "type": "string",
+      "enum": ["continue", "warn", "require_approval", "downgrade_model", "stop_nonessential_work", "escalate_to_owner"]
+    }
+  }
+}

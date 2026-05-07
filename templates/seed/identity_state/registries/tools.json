@@ -1,0 +1,216 @@
+{
+  "version": "2026-04-30.seed",
+  "registry_scope": "seed_runtime_available",
+  "baseline_internal_tools": [
+    {
+      "id": "repo_read",
+      "category": "internal_runtime",
+      "status": "available",
+      "authority": "read_identity_repo_files",
+      "allowed_agents": [
+        "runtime_orchestration_planner",
+        "identity_evolution_manager",
+        "owner_onboarding",
+        "context_collector",
+        "business_research_planner",
+        "knowledge_drafter",
+        "capability_gap_manager",
+        "capability_proposal_writer",
+        "owner_review_coordinator",
+        "human_review",
+        "stop"
+      ],
+      "side_effect": "none"
+    },
+    {
+      "id": "repo_write_proposal",
+      "category": "internal_runtime",
+      "status": "available_policy_limited",
+      "authority": "write_safe_drafts_proposals_and_review_artifacts",
+      "allowed_agents": [
+        "identity_evolution_manager",
+        "context_collector",
+        "business_research_planner",
+        "knowledge_drafter",
+        "capability_gap_manager",
+        "capability_proposal_writer",
+        "owner_review_coordinator",
+        "human_review"
+      ],
+      "side_effect": "repo_artifact_write",
+      "approval_required": false
+    },
+    {
+      "id": "conversation_artifact_write",
+      "category": "internal_runtime",
+      "status": "available_policy_limited",
+      "authority": "write_safe_conversation_current_status_and_compact_artifacts",
+      "allowed_agents": [
+        "owner_onboarding",
+        "context_collector",
+        "human_review",
+        "stop"
+      ],
+      "side_effect": "safe_conversation_artifact"
+    },
+    {
+      "id": "semfs_vector_retrieve",
+      "category": "semfs_vector",
+      "status": "available_through_policy",
+      "authority": "retrieve_allowed_vector_summaries_only",
+      "allowed_agents": [
+        "runtime_orchestration_planner",
+        "identity_evolution_manager",
+        "context_collector",
+        "business_research_planner",
+        "knowledge_drafter",
+        "capability_gap_manager"
+      ],
+      "side_effect": "none"
+    },
+    {
+      "id": "semfs_vector_upsert",
+      "category": "semfs_vector",
+      "status": "available_through_policy",
+      "authority": "upsert_safe_summaries_to_allowed_seed_namespaces",
+      "allowed_agents": [
+        "context_collector",
+        "business_research_planner",
+        "knowledge_drafter",
+        "capability_gap_manager",
+        "owner_review_coordinator",
+        "human_review"
+      ],
+      "side_effect": "vector_summary_write",
+      "approval_required": "depends_on_sensitivity"
+    },
+    {
+      "id": "facet_hydrate",
+      "category": "internal_runtime",
+      "status": "available",
+      "authority": "hydrate_validated_seed_facets_into_runtime_contract",
+      "allowed_agents": [
+        "runtime_orchestration_planner"
+      ],
+      "side_effect": "runtime_contract_update"
+    },
+    {
+      "id": "structured_output_validate",
+      "category": "internal_runtime",
+      "status": "available",
+      "authority": "validate_seed_output_contracts",
+      "allowed_agents": [
+        "runtime_orchestration_planner"
+      ],
+      "side_effect": "none"
+    },
+    {
+      "id": "usage_event_emit",
+      "category": "internal_runtime",
+      "status": "available",
+      "authority": "emit_usage_events_for_identity_agent_route_tool",
+      "allowed_agents": [
+        "runtime_orchestration_planner",
+        "identity_evolution_manager",
+        "human_review",
+        "stop"
+      ],
+      "side_effect": "usage_event"
+    },
+    {
+      "id": "human_review_packet_create",
+      "category": "internal_runtime",
+      "status": "available",
+      "authority": "create_plain_language_owner_or_human_review_packets",
+      "allowed_agents": [
+        "owner_review_coordinator",
+        "human_review",
+        "capability_proposal_writer"
+      ],
+      "side_effect": "review_packet"
+    },
+    {
+      "id": "owner_approval_capture",
+      "category": "internal_runtime",
+      "status": "available",
+      "authority": "capture_owner_approval_or_rejection_without_self_activation",
+      "allowed_agents": [
+        "owner_review_coordinator",
+        "human_review"
+      ],
+      "side_effect": "approval_record"
+    },
+    {
+      "id": "capability_gap_record",
+      "category": "internal_runtime",
+      "status": "available",
+      "authority": "record_missing_capability_and_safe_default",
+      "allowed_agents": [
+        "capability_gap_manager",
+        "identity_evolution_manager"
+      ],
+      "side_effect": "capability_gap_artifact"
+    },
+    {
+      "id": "capability_proposal_create",
+      "category": "internal_runtime",
+      "status": "available",
+      "authority": "draft_inactive_capability_proposal",
+      "allowed_agents": [
+        "capability_proposal_writer",
+        "identity_evolution_manager"
+      ],
+      "side_effect": "inactive_proposal_artifact"
+    }
+  ],
+  "optional_runtime_tools": [
+    {
+      "id": "public_web_research",
+      "status": "optional_disabled_until_runtime_enabled",
+      "authority": "perform_public_business_research_with_source_notes"
+    },
+    {
+      "id": "source_quality_check",
+      "status": "optional_disabled_until_runtime_enabled",
+      "authority": "rate_public_sources_for_draft_knowledge"
+    },
+    {
+      "id": "temporary_public_review_site_create",
+      "status": "optional_requires_owner_approval",
+      "authority": "create_temporary_review_surface_for_owner_or invited reviewers"
+    },
+    {
+      "id": "survey_result_ingest",
+      "status": "optional_requires_owner_approval_for_collection",
+      "authority": "ingest survey summaries"
+    },
+    {
+      "id": "credential_binding_request",
+      "status": "optional_requires_owner_approval",
+      "authority": "prepare safe credential setup request only"
+    },
+    {
+      "id": "payment_provider_binding_request",
+      "status": "optional_requires_owner_approval",
+      "authority": "prepare safe payment provider setup request only"
+    },
+    {
+      "id": "email_draft_prepare",
+      "status": "optional_no_send",
+      "authority": "prepare email drafts without sending"
+    }
+  ],
+  "prohibited_until_approved_or_bound": [
+    "live_external_send",
+    "live_scheduling",
+    "live_payment_request",
+    "live_credential_use",
+    "live_purchasing_or_spend",
+    "automatic_policy_activation",
+    "automatic_new_agent_activation",
+    "automatic_tool_activation",
+    "automatic_specialist_activation"
+  ],
+  "tool_aliases_ref": "identity_state/registries/tool-aliases.json",
+  "normalization_rule": "Normalize aliases before enforcing agent tool permissions; aliases do not grant new authority."
+}

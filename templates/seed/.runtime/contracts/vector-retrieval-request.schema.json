@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vector-retrieval-request.schema.json",
+  "title": "Vector Retrieval Request",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "identity_id", "request_id", "namespaces", "purpose", "requested_by", "max_records", "privacy_posture"],
+  "properties": {
+    "schema_version": {"const": "vector_retrieval_request.v1"},
+    "identity_id": {"const": "solo-identity-seed"},
+    "request_id": {"type": "string"},
+    "conversation_id": {"type": ["string", "null"]},
+    "run_id": {"type": ["string", "null"]},
+    "namespaces": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+    "purpose": {"type": "string"},
+    "retrieval_mode": {"enum": ["when_needed", "required_for_route", "human_review_only"], "default": "when_needed"},
+    "query_summary": {"type": "string"},
+    "filters": {"type": "object"},
+    "requested_by": {"type": "string"},
+    "route": {"type": ["string", "null"]},
+    "agent_id": {"type": ["string", "null"]},
+    "max_records": {"type": "integer", "minimum": 1, "maximum": 20},
+    "privacy_posture": {"enum": ["public_ok", "internal_only", "sensitive_allowed", "runtime_only"]},
+    "trust_assertion_ref": {"type": ["string", "null"]}
+  }
+}

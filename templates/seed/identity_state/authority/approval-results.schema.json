@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "approval-results.schema.json",
+  "title": "Approval Result",
+  "type": "object",
+  "required": ["approval_id", "status", "approval_type", "role", "provenance", "timestamp", "resume"],
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["approved", "rejected", "changes_requested", "expired", "blocked_unverified"]
+    },
+    "approval_type": { "type": "string" },
+    "role": { "type": "string" },
+    "provenance": {
+      "type": "object",
+      "required": ["source_class", "trust_assertion_ref"],
+      "properties": {
+        "source_class": { "type": "string" },
+        "trust_assertion_ref": { "type": "string" },
+        "runtime_private_event_ref": { "type": "string" }
+      }
+    },
+    "timestamp": { "type": "string" },
+    "approved_action_ref": { "type": "string" },
+    "conditions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_route": { "type": "string" },
+    "resume": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["route_field", "next", "payload"],
+      "properties": {
+        "route_field": { "enum": ["decision.routing.next", "decision.evolution.next"] },
+        "next": { "type": "string" },
+        "payload": { "type": "object" },
+        "expires_at": { "type": ["string", "null"] }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

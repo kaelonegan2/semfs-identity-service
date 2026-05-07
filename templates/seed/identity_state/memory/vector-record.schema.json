@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "semfs-vector-record.schema.json",
+  "title": "SemFS Vector Memory Record Metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "namespace",
+    "record_id",
+    "identity_id",
+    "source_path",
+    "source_kind",
+    "authority_level",
+    "summary",
+    "content_ref",
+    "created_by",
+    "created_at",
+    "ttl_policy",
+    "privacy_class",
+    "retrieval_tags"
+  ],
+  "properties": {
+    "namespace": {"type": "string"},
+    "record_id": {"type": "string"},
+    "identity_id": {"const": "solo-identity-seed"},
+    "conversation_id": {"type": ["string", "null"]},
+    "source_path": {"type": "string"},
+    "source_kind": {"enum": ["markdown", "json", "conversation", "agent_output", "research", "approval", "usage", "tool_result", "payment", "credential", "feedback"]},
+    "authority_level": {"enum": ["authoritative", "guidance", "example", "runtime-generated", "proposal", "approved", "activated", "external/vector-ref", "runtime-compatibility"]},
+    "summary": {"type": "string", "maxLength": 1000},
+    "content_ref": {"type": "string", "pattern": "^semfs://vector/solo-identity-seed/[^/]+/[^/]+$"},
+    "related_paths": {"type": "array", "items": {"type": "string"}, "default": []},
+    "created_by": {"type": "string"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "ttl_policy": {"enum": ["none", "refresh", "expire"]},
+    "privacy_class": {"enum": ["public", "internal", "sensitive", "private"]},
+    "retrieval_tags": {"type": "array", "items": {"type": "string"}},
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "runtime_id": {"type": "string"},
+        "run_id": {"type": "string"},
+        "agent_id": {"type": "string"},
+        "approval_id": {"type": "string"}
+      }
+    }
+  }
+}

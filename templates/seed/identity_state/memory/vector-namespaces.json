@@ -1,0 +1,24 @@
+{
+  "schema_version": "vector_namespaces.seed.v1",
+  "identity_id": "solo-identity-seed",
+  "uri_pattern": "semfs://vector/solo-identity-seed/{namespace}/{record_id}",
+  "initial_state": "no_vector_memory_yet",
+  "default_retrieval": {
+    "max_records": 3,
+    "mode": "when_route_and_policy_allow",
+    "conflict_rule": "authoritative_repo_files_win"
+  },
+  "namespaces": [
+    {"key": "owner-onboarding-summaries", "state": "empty_at_seed", "category": "seed_context", "privacy_class": "internal", "default_access": "verified_owner_or_internal_seed_agents", "example_upsert": "summary of owner-approved setup preferences"},
+    {"key": "identity-profile-history", "state": "empty_at_seed", "category": "identity_authority", "privacy_class": "internal", "default_access": "verified_owner_or_internal_seed_agents", "example_upsert": "owner-provided identity or business description summary"},
+    {"key": "research-summary-drafts", "state": "empty_at_seed", "category": "research", "privacy_class": "internal", "default_access": "internal_seed_agents", "example_upsert": "public research summary with source notes"},
+    {"key": "knowledge-draft-feedback", "state": "empty_at_seed", "category": "knowledge", "privacy_class": "internal", "default_access": "internal_seed_agents", "example_upsert": "owner feedback on knowledge draft"},
+    {"key": "capability-gap-history", "state": "empty_at_seed", "category": "capability_evolution", "privacy_class": "internal", "default_access": "internal_seed_agents", "example_upsert": "intake or external-send gap record"},
+    {"key": "capability-proposal-history", "state": "empty_at_seed", "category": "capability_evolution", "privacy_class": "internal", "default_access": "verified_owner_or_internal_seed_agents", "example_upsert": "inactive capability proposal summary"},
+    {"key": "human-review-history", "state": "empty_at_seed", "category": "authority", "privacy_class": "sensitive", "default_access": "elevated_trust", "example_upsert": "approval or rejection summary"},
+    {"key": "usage-events", "state": "empty_at_seed", "category": "governance", "privacy_class": "internal", "default_access": "runtime_only", "example_upsert": "route/agent/tool usage event"},
+    {"key": "conversation-summaries", "state": "empty_at_seed", "category": "conversation", "privacy_class": "internal", "default_access": "route_scoped", "example_upsert": "safe conversation closeout summary"},
+    {"key": "audience-memory", "state": "future_use_inactive", "category": "audience", "privacy_class": "sensitive", "default_access": "blocked_in_seed", "example_upsert": "not allowed until capability approved"},
+    {"key": "preference-memory", "state": "future_use_inactive", "category": "audience", "privacy_class": "sensitive", "default_access": "blocked_in_seed", "example_upsert": "not allowed until capability approved"}
+  ]
+}

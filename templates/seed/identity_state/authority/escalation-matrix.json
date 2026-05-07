@@ -1,0 +1,25 @@
+{
+  "schema_version": "seed_escalation_matrix.v1",
+  "approval_required": {
+    "external_send_low_risk": {
+      "review_role": "owner_or_delegated_reviewer",
+      "reason": "No external sends are active in seed mode."
+    },
+    "external_send_with_commitment": {
+      "review_role": "identity_owner",
+      "reason": "Commitments require owner approval."
+    },
+    "pricing_or_commitment": {
+      "review_role": "identity_owner",
+      "reason": "Pricing, scope, timing, eligibility, or delivery commitments are not active in seed mode."
+    },
+    "credential_or_payment": {
+      "review_role": "identity_owner",
+      "reason": "Credentials and payments require explicit owner approval and runtime binding."
+    },
+    "activation": {
+      "review_role": "identity_owner",
+      "reason": "Tools, agents, specialists, policies, and capabilities cannot self-activate."
+    }
+  }
+}

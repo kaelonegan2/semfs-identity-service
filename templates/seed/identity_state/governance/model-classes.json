@@ -1,0 +1,34 @@
+{
+  "schema_version": "model_classes.seed.v1",
+  "classes": {
+    "low_cost_fast": {
+      "use_for": ["routing", "simple_extraction", "status_updates"],
+      "avoid_for": ["policy_conflict", "complex_research_synthesis"]
+    },
+    "standard_reasoning": {
+      "use_for": ["context_collection", "knowledge_drafting", "summarization"],
+      "avoid_for": ["high_risk_policy_change", "activation_decisions"]
+    },
+    "high_reasoning": {
+      "use_for": ["maturation_planning", "capability_gap_resolution", "research_synthesis"],
+      "avoid_for": ["bulk_simple_status_updates"]
+    },
+    "review_grade": {
+      "use_for": ["human_review_packets", "authority_sensitive_summaries"],
+      "avoid_for": ["cheap_bulk_classification"]
+    }
+  },
+  "agent_recommendations": {
+    "runtime_orchestration_planner": {"primary": "low_cost_fast", "fallback": "standard_reasoning"},
+    "identity_evolution_manager": {"primary": "high_reasoning", "fallback": "review_grade"},
+    "owner_onboarding": {"primary": "standard_reasoning", "fallback": "review_grade"},
+    "context_collector": {"primary": "standard_reasoning", "fallback": "high_reasoning"},
+    "business_research_planner": {"primary": "high_reasoning", "fallback": "standard_reasoning"},
+    "knowledge_drafter": {"primary": "standard_reasoning", "fallback": "high_reasoning"},
+    "capability_gap_manager": {"primary": "high_reasoning", "fallback": "standard_reasoning"},
+    "capability_proposal_writer": {"primary": "high_reasoning", "fallback": "review_grade"},
+    "owner_review_coordinator": {"primary": "review_grade", "fallback": "high_reasoning"},
+    "human_review": {"primary": "review_grade", "fallback": "high_reasoning"},
+    "stop": {"primary": "low_cost_fast", "fallback": "standard_reasoning"}
+  }
+}

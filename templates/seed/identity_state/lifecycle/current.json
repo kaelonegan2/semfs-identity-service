@@ -1,0 +1,54 @@
+{
+  "schema_version": "identity_lifecycle_state.v1",
+  "identity_id": "solo-identity-seed",
+  "current_mode": "seed_runtime_available",
+  "mode_permissions_ref": "identity_state/lifecycle/mode-permissions.json",
+  "status_ref": "identity_state/status/current.json",
+  "readiness_score_ref": "identity_state/lifecycle/readiness-score.json",
+  "runtime_assumption": "minimum_compatible_solo_style_runtime",
+  "autonomous_work_allowed": [
+    "inspect_identity_repo",
+    "summarize_owner_context",
+    "write_safe_conversation_current_status",
+    "draft_identity_purpose_assumptions",
+    "draft_business_or_function_profile_assumptions",
+    "draft_research_plans",
+    "draft_knowledge_candidates",
+    "draft_prompt_guidance",
+    "record_capability_gaps",
+    "draft_capability_proposals",
+    "prepare_human_review_packets",
+    "recommend_next_maturation_step"
+  ],
+  "approval_required_for": [
+    "external_send",
+    "final_pricing_or_commitment",
+    "scheduling_or_capacity_commitment",
+    "payment_request",
+    "credential_binding",
+    "spending_money",
+    "public_publishing",
+    "policy_activation",
+    "tool_activation",
+    "specialist_activation",
+    "new_agent_activation",
+    "capability_activation",
+    "lifecycle_mode_change",
+    "material_authority_change"
+  ],
+  "blocked_in_seed": [
+    "external_facing_autonomous_send",
+    "final_price_or_quote",
+    "calendar_capacity_or_delivery_commitment",
+    "live_payment_collection",
+    "live_credential_use",
+    "automatic_policy_change",
+    "automatic_capability_activation",
+    "maturation_from_unverified_inbound"
+  ],
+  "owner_question_policy": {
+    "style": "plain_language_business_level_few_high_leverage_questions",
+    "must_include": ["recommendation", "reason", "decision_needed", "safe_default"],
+    "avoid": ["agent_design_questions", "route_design_questions", "prompt_design_questions", "vector_namespace_questions", "schema_questions", "workflow_orchestration_questions"]
+  }
+}

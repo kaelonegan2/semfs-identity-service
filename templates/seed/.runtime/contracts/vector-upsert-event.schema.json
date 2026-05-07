@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vector-upsert-event.schema.json",
+  "title": "Vector Upsert Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "identity_id",
+    "namespace",
+    "source_path",
+    "source_kind",
+    "authority_level",
+    "summary",
+    "privacy_class",
+    "source_agent",
+    "related_paths",
+    "upsert_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "vector_upsert_event.v1"},
+    "event_id": {"type": "string"},
+    "identity_id": {"const": "solo-identity-seed"},
+    "conversation_id": {"type": ["string", "null"]},
+    "run_id": {"type": ["string", "null"]},
+    "namespace": {"type": "string"},
+    "record_id": {"type": ["string", "null"]},
+    "content_ref": {"type": ["string", "null"], "pattern": "^semfs://vector/solo-identity-seed/[^/]+/[^/]+$"},
+    "source_path": {"type": "string"},
+    "filesystem_path": {"type": "string"},
+    "source_kind": {"enum": ["markdown", "json", "conversation", "agent_output", "research", "approval", "usage", "tool_result", "payment", "credential", "feedback"]},
+    "authority_level": {"enum": ["authoritative", "guidance", "example", "runtime-generated", "proposal", "approved", "activated", "external/vector-ref", "runtime-compatibility"]},
+    "summary": {"type": "string", "maxLength": 1000},
+    "privacy_class": {"enum": ["public", "internal", "sensitive", "private"]},
+    "source_agent": {"type": "string"},
+    "related_paths": {"type": "array", "items": {"type": "string"}},
+    "retrieval_tags": {"type": "array", "items": {"type": "string"}},
+    "requires_approval": {"type": "boolean"},
+    "approval_ref": {"type": ["string", "null"]},
+    "upsert_status": {"enum": ["proposed", "approved_for_runtime_write", "written", "rejected", "skipped"]}
+  }
+}

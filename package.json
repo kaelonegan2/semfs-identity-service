@@ -1,0 +1,36 @@
+{
+  "name": "semfs",
+  "version": "0.1.0",
+  "description": "SemFS identity service for agent-readable, policy-governed identity repositories.",
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "main": "dist/index.js",
+  "bin": {
+    "semfs": "dist/index.js",
+    "semfs-mcp": "dist/mcp/stdio.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "mcp": "tsx src/mcp/stdio.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.4",
+    "ajv": "^8.17.1",
+    "fastify": "^5.4.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.14",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4",
+    "yaml": "^2.8.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

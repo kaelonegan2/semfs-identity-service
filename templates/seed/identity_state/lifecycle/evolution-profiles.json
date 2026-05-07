@@ -1,0 +1,16 @@
+{
+  "schema_version": "seed_evolution_profiles.v1",
+  "active_profile": "seed_runtime_available",
+  "profiles": {
+    "seed_runtime_available": {
+      "status": "active",
+      "routes": ["owner_onboarding", "context_collect", "clarify_intent", "research_plan", "knowledge_draft", "capability_gap", "capability_proposal", "human_review", "stop"],
+      "agents": ["runtime_orchestration_planner", "identity_evolution_manager", "owner_onboarding", "context_collector", "business_research_planner", "knowledge_drafter", "capability_gap_manager", "capability_proposal_writer", "owner_review_coordinator", "human_review", "stop"],
+      "activation_allowed": false
+    },
+    "mid_state_reference_target": {
+      "status": "inactive_future",
+      "activation_allowed": "requires_owner_approval_runtime_support_eval_coverage"
+    }
+  }
+}

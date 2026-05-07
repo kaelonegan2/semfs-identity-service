@@ -1,0 +1,39 @@
+{
+  "schema_version": "baseline_runtime_tools.v1",
+  "identity_id": "solo-identity-seed",
+  "lifecycle_mode": "seed_runtime_available",
+  "internal_runtime_tools": [
+    "repo_read",
+    "repo_write_proposal",
+    "conversation_artifact_write",
+    "semfs_vector_retrieve",
+    "semfs_vector_upsert",
+    "facet_hydrate",
+    "structured_output_validate",
+    "usage_event_emit",
+    "human_review_packet_create",
+    "owner_approval_capture",
+    "capability_gap_record",
+    "capability_proposal_create"
+  ],
+  "optional_runtime_tools": [
+    "public_web_research",
+    "source_quality_check",
+    "temporary_public_review_site_create",
+    "survey_result_ingest",
+    "credential_binding_request",
+    "payment_provider_binding_request",
+    "email_draft_prepare"
+  ],
+  "prohibited_until_approved_or_bound": [
+    "live_external_send",
+    "live_scheduling",
+    "live_payment_request",
+    "live_credential_use",
+    "live_purchasing_or_spend",
+    "automatic_policy_activation",
+    "automatic_new_agent_activation",
+    "automatic_tool_activation",
+    "automatic_specialist_activation"
+  ]
+}

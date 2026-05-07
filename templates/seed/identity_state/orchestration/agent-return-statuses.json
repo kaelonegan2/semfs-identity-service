@@ -1,0 +1,48 @@
+{
+  "schema_version": "agent_return_statuses.v1",
+  "statuses": {
+    "complete": {
+      "meaning": "Agent completed its assigned work and emitted required facets.",
+      "default_next": "hydrate"
+    },
+    "needs_context": {
+      "meaning": "Agent cannot proceed without missing identity, conversation, audience, account, property, project, or domain context.",
+      "default_next": "context_resolution"
+    },
+    "needs_clarification": {
+      "meaning": "Inbound owner, operator, or external request is too ambiguous to continue safely.",
+      "default_route": "clarify_intent"
+    },
+    "needs_tool": {
+      "meaning": "Required tool or tool schema is unavailable.",
+      "default_next": "capability_gap",
+      "next_type": "stage"
+    },
+    "needs_specialist": {
+      "meaning": "A non-active specialist capability is needed.",
+      "default_next": "capability_gap",
+      "next_type": "stage"
+    },
+    "needs_human_review": {
+      "meaning": "Approval or human judgment is required.",
+      "default_route": "human_review"
+    },
+    "capability_gap_detected": {
+      "meaning": "A missing capability should be recorded and possibly proposed.",
+      "default_next": "capability_gap",
+      "next_type": "stage"
+    },
+    "blocked_by_authority": {
+      "meaning": "Lifecycle, role, ownership, or approval boundary blocks the requested action.",
+      "default_route": "human_review"
+    },
+    "ready_for_reply": {
+      "meaning": "A safe draft exists, but external send authority still must be enforced.",
+      "default_next": "authority_gate"
+    },
+    "safe_stop": {
+      "meaning": "No further autonomous work should occur in this run.",
+      "default_route": "stop"
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "version": "2026-04-30.seed",
+  "lifecycle_mode": "seed_runtime_available",
+  "intents": [
+    {"id": "owner_setup_question", "default_route": "owner_onboarding"},
+    {"id": "owner_context_provided", "default_route": "context_collect"},
+    {"id": "ambiguous_seed_safe_request", "default_route": "clarify_intent"},
+    {"id": "research_needed", "default_route": "research_plan"},
+    {"id": "knowledge_needed", "default_route": "knowledge_draft"},
+    {"id": "capability_missing", "default_route": "capability_gap"},
+    {"id": "capability_proposal_needed", "default_route": "capability_proposal"},
+    {"id": "authority_or_trust_boundary", "default_route": "human_review"},
+    {"id": "spam_noise_or_no_safe_action", "default_route": "stop"}
+  ],
+  "inactive_future_intents": [
+    "lead_qualification",
+    "service_qa",
+    "estimate_packet_preparation",
+    "work_packet_preparation",
+    "maintenance_followup",
+    "payment_request"
+  ]
+}

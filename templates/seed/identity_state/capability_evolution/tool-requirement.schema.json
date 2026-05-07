@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tool-requirement.schema.json",
+  "title": "Tool Requirement",
+  "type": "object",
+  "required": ["tool_id", "purpose", "inputs", "outputs", "risk_level", "credential_requirements", "approval_required"],
+  "additionalProperties": false,
+  "properties": {
+    "tool_id": { "type": "string" },
+    "purpose": { "type": "string" },
+    "inputs": { "type": "array", "items": { "type": "string" } },
+    "outputs": { "type": "array", "items": { "type": "string" } },
+    "errors": { "type": "array", "items": { "type": "string" } },
+    "audit_events": { "type": "array", "items": { "type": "string" } },
+    "risk_level": { "type": "string" },
+    "credential_requirements": { "type": "array", "items": { "type": "string" } },
+    "approval_required": { "type": "boolean" },
+    "eval_requirements": { "type": "array", "items": { "type": "string" } }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "schema_version": "namespace_maturation_map.v1",
+  "source_lifecycle_mode": "seed_runtime_available",
+  "target_lifecycle_family": "mid_state_or_later",
+  "principle": "Seed namespaces are valid draft and setup memory surfaces. During maturation, reviewed summaries may be copied, linked, or superseded by operational namespaces after approval and policy checks.",
+  "mappings": [
+    {
+      "seed_namespace": "owner-onboarding-summaries",
+      "matures_to": ["identity-profile-history"],
+      "activation_condition": "Owner-reviewed identity purpose, profile, tone, or operating constraints become durable identity history."
+    },
+    {
+      "seed_namespace": "identity-profile-history",
+      "matures_to": ["identity-profile-history"],
+      "activation_condition": "Profile history remains stable across lifecycle modes."
+    },
+    {
+      "seed_namespace": "research-summary-drafts",
+      "matures_to": ["business-research-sources", "market-research-sources", "service-area-research"],
+      "activation_condition": "Draft research is source-reviewed and associated with the matured identity domain."
+    },
+    {
+      "seed_namespace": "knowledge-draft-feedback",
+      "matures_to": ["knowledge-review-feedback", "approved-knowledge-answers"],
+      "activation_condition": "Draft knowledge is reviewed, scored, and approved for operational guidance."
+    },
+    {
+      "seed_namespace": "capability-gap-history",
+      "matures_to": ["capability-gap-history"],
+      "activation_condition": "Gap records remain useful as maturation evidence."
+    },
+    {
+      "seed_namespace": "capability-proposal-history",
+      "matures_to": ["tool-proposal-history", "specialist-proposal-history", "activated-capability-decisions"],
+      "activation_condition": "Inactive proposals are reviewed; approved and activated capabilities move to the relevant proposal or activation namespace."
+    },
+    {
+      "seed_namespace": "human-review-history",
+      "matures_to": ["human-review-history", "owner-approval-decisions"],
+      "activation_condition": "Review outcomes become durable approval context without exposing private verification evidence."
+    },
+    {
+      "seed_namespace": "usage-events",
+      "matures_to": ["usage-events", "usage-rollups", "budget-threshold-events"],
+      "activation_condition": "Runtime usage events continue and may be summarized into rollups."
+    },
+    {
+      "seed_namespace": "conversation-summaries",
+      "matures_to": ["conversation-summaries", "customer-inquiry-history"],
+      "activation_condition": "Conversation summaries become operational memory only after domain, audience, and privacy policy are approved."
+    },
+    {
+      "seed_namespace": "audience-memory",
+      "matures_to": ["customer-inquiry-history", "customer-preference-memory"],
+      "activation_condition": "Audience notes become customer/user memory only after the matured identity has an approved audience model."
+    },
+    {
+      "seed_namespace": "preference-memory",
+      "matures_to": ["customer-preference-memory"],
+      "activation_condition": "Approved preferences become route-scoped operational preference memory."
+    }
+  ]
+}

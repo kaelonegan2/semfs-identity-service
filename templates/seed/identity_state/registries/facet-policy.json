@@ -1,0 +1,87 @@
+{
+  "version": "2026-04-30.seed",
+  "facets": {
+    "owner_onboarding": {
+      "hydrate_to": "runtime_contract.facets.owner_onboarding",
+      "semfs_target": "conversations/{conversation_id}/current-status.md",
+      "vector_upsert": "owner-onboarding-summaries",
+      "requires_approval": false
+    },
+    "context_summary": {
+      "hydrate_to": "runtime_contract.facets.context_summary",
+      "semfs_target": "conversations/{conversation_id}/current-status.md",
+      "vector_upsert": "identity-profile-history",
+      "requires_approval": false
+    },
+    "research_plan": {
+      "hydrate_to": "runtime_contract.facets.research_plan",
+      "semfs_target": "identity_state/research/business-research-plan.md",
+      "vector_upsert": "research-summary-drafts",
+      "requires_approval": false
+    },
+    "knowledge_draft": {
+      "hydrate_to": "runtime_contract.facets.knowledge_draft",
+      "semfs_target": "identity_state/knowledge/review-queue.md",
+      "vector_upsert": "knowledge-draft-feedback",
+      "requires_approval": "owner_approval_required_before_public_or_external_use"
+    },
+    "capability_gap": {
+      "hydrate_to": "runtime_contract.facets.capability_gap",
+      "semfs_target": "identity_state/capability_evolution/gaps.md",
+      "vector_upsert": "capability-gap-history",
+      "requires_approval": false
+    },
+    "capability_proposal": {
+      "hydrate_to": "runtime_contract.facets.capability_proposal",
+      "semfs_target": "identity_state/capability_evolution/proposals/",
+      "vector_upsert": "capability-proposal-history",
+      "requires_approval": "activation_requires_owner_approval"
+    },
+    "human_review": {
+      "hydrate_to": "runtime_contract.facets.human_review",
+      "semfs_target": "conversations/{conversation_id}/artifacts/human-review-packet.md",
+      "vector_upsert": "human-review-history",
+      "requires_approval": false
+    },
+    "usage_event": {
+      "hydrate_to": "runtime_contract.usage.events",
+      "semfs_target": "runtime_event_stream",
+      "vector_upsert": "usage-events",
+      "requires_approval": false
+    },
+    "closeout": {
+      "hydrate_to": "runtime_contract.facets.closeout",
+      "semfs_target": "conversations/{conversation_id}/current-status.md",
+      "vector_upsert": "conversation-summaries",
+      "requires_approval": false
+    },
+    "expected": {
+      "hydrate_to": "runtime_contract.orchestration.expected_facets",
+      "semfs_target": "runtime_contract_only",
+      "requires_approval": false
+    },
+    "vector_upsert": {
+      "hydrate_to": "runtime_contract.facets.vector_upsert",
+      "semfs_target": "vector_store_selected",
+      "requires_approval": "depends_on_sensitivity"
+    },
+    "pending_approval": {
+      "hydrate_to": "runtime_contract.facets.pending_approval",
+      "semfs_target": "conversations/{conversation_id}/artifacts/human-review-packet.md",
+      "requires_approval": true
+    },
+    "trust_issue": {
+      "hydrate_to": "runtime_contract.identity_authority.trust_issue",
+      "semfs_target": "runtime_contract_only",
+      "requires_approval": false
+    }
+  },
+  "forbidden_hydration": [
+    "full_repo_contents",
+    "raw_vector_records",
+    "raw_private_transcripts",
+    "credentials",
+    "payment_tokens",
+    "unapproved_policy_as_active_truth"
+  ]
+}

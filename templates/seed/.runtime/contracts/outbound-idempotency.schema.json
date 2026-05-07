@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "outbound-idempotency.schema.json",
+  "title": "Outbound Idempotency Audit",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "outbound_candidate_id",
+    "conversation_id",
+    "route",
+    "stage",
+    "agent_id",
+    "approval_required",
+    "send_eligible",
+    "idempotency_key",
+    "audit_event"
+  ],
+  "properties": {
+    "schema_version": { "const": "outbound_idempotency.v1" },
+    "outbound_candidate_id": { "type": "string" },
+    "conversation_id": { "type": "string" },
+    "message_id": { "type": ["string", "null"] },
+    "thread_id": { "type": ["string", "null"] },
+    "route": { "type": "string" },
+    "stage": { "type": "string" },
+    "agent_id": { "type": "string" },
+    "approval_required": { "type": "boolean" },
+    "approval_id": { "type": ["string", "null"] },
+    "send_eligible": { "type": "boolean" },
+    "selected_final_outbound": { "type": "boolean" },
+    "suppressed_duplicate_send": { "type": "boolean" },
+    "idempotency_key": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["identity_id", "conversation_id", "outbound_candidate_id", "approval_id_or_none", "body_hash"],
+      "properties": {
+        "identity_id": { "type": "string" },
+        "conversation_id": { "type": "string" },
+        "outbound_candidate_id": { "type": "string" },
+        "approval_id_or_none": { "type": "string" },
+        "body_hash": { "type": "string" }
+      }
+    },
+    "audit_event": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["event_type", "timestamp", "runtime_id"],
+      "properties": {
+        "event_type": { "enum": ["candidate_created", "send_blocked", "send_selected", "duplicate_suppressed", "sent"] },
+        "timestamp": { "type": "string" },
+        "runtime_id": { "type": "string" }
+      }
+    }
+  }
+}

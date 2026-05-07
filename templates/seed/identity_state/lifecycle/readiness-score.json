@@ -1,0 +1,144 @@
+{
+  "schema_version": "seed_readiness_score.v1",
+  "identity_id": "solo-identity-seed",
+  "overall_score": 18,
+  "score_scale": "0_to_100",
+  "dimensions": [
+    {
+      "id": "identity_purpose_clarity",
+      "score": 5,
+      "autonomous_action": "draft purpose options from owner-provided context",
+      "seed_agent": "context_collector",
+      "baseline_tool": "conversation_artifact_write",
+      "artifact": "identity_state/profile/current.md draft purpose update",
+      "owner_approval_required": true,
+      "recommended_default": "Treat purpose as draft until owner confirms."
+    },
+    {
+      "id": "business_or_domain_profile_completeness",
+      "score": 5,
+      "autonomous_action": "draft profile assumptions and research plan",
+      "seed_agent": "context_collector",
+      "baseline_tool": "conversation_artifact_write",
+      "artifact": "identity_state/profile/current.md draft update",
+      "owner_approval_required": true,
+      "recommended_default": "Do not assume domain, audience, offerings, or market."
+    },
+    {
+      "id": "authority_clarity",
+      "score": 55,
+      "autonomous_action": "preserve strict approval matrix and ask only authority questions",
+      "seed_agent": "owner_review_coordinator",
+      "baseline_tool": "human_review_packet_create",
+      "artifact": "human review packet",
+      "owner_approval_required": true,
+      "recommended_default": "Block external sends, pricing, scheduling, payments, credentials, publishing, and activations."
+    },
+    {
+      "id": "prompt_coverage",
+      "score": 70,
+      "autonomous_action": "use seed prompts with contract/prep context to collect context, plan research, draft knowledge, and propose capabilities",
+      "seed_agent": "identity_evolution_manager",
+      "baseline_tool": "repo_read",
+      "artifact": "prompt coverage audit",
+      "owner_approval_required": false,
+      "recommended_default": "Improve prompts after first owner onboarding examples."
+    },
+    {
+      "id": "route_coverage",
+      "score": 60,
+      "autonomous_action": "route only seed-safe setup and review work",
+      "seed_agent": "runtime_orchestration_planner",
+      "baseline_tool": "structured_output_validate",
+      "artifact": "planner decision",
+      "owner_approval_required": false,
+      "recommended_default": "Keep mature external-facing routes inactive."
+    },
+    {
+      "id": "knowledge_coverage",
+      "score": 5,
+      "autonomous_action": "draft FAQ, offering, intake, and policy candidates from context and research",
+      "seed_agent": "knowledge_drafter",
+      "baseline_tool": "repo_write_proposal",
+      "artifact": "identity_state/knowledge/review-queue.md",
+      "owner_approval_required": true,
+      "recommended_default": "Use draft-only, non-binding language."
+    },
+    {
+      "id": "tool_readiness",
+      "score": 35,
+      "autonomous_action": "record required tools and distinguish baseline from optional",
+      "seed_agent": "capability_gap_manager",
+      "baseline_tool": "capability_gap_record",
+      "artifact": "identity_state/capability_evolution/gaps.md",
+      "owner_approval_required": false,
+      "recommended_default": "Use only baseline internal tools."
+    },
+    {
+      "id": "specialist_readiness",
+      "score": 10,
+      "autonomous_action": "draft inactive specialist proposals only after need is clear",
+      "seed_agent": "capability_proposal_writer",
+      "baseline_tool": "capability_proposal_create",
+      "artifact": "identity_state/capability_evolution/proposals/",
+      "owner_approval_required": true,
+      "recommended_default": "No specialist active at seed."
+    },
+    {
+      "id": "trust_ownership_configuration",
+      "score": 40,
+      "autonomous_action": "require runtime owner verification before owner-level changes",
+      "seed_agent": "runtime_orchestration_planner",
+      "baseline_tool": "owner_approval_capture",
+      "artifact": "owner approval record",
+      "owner_approval_required": true,
+      "recommended_default": "Non-owner inbound routes to clarification, review, or stop."
+    },
+    {
+      "id": "usage_governance_readiness",
+      "score": 45,
+      "autonomous_action": "emit usage events and avoid expensive optional tools unless justified",
+      "seed_agent": "runtime_orchestration_planner",
+      "baseline_tool": "usage_event_emit",
+      "artifact": "usage event",
+      "owner_approval_required": false,
+      "recommended_default": "Prefer low-cost drafting before research."
+    },
+    {
+      "id": "payment_compliance_readiness",
+      "score": 0,
+      "autonomous_action": "record payment as proposed inactive capability",
+      "seed_agent": "capability_gap_manager",
+      "baseline_tool": "capability_gap_record",
+      "artifact": "payment capability gap",
+      "owner_approval_required": true,
+      "recommended_default": "No payment requests in seed."
+    },
+    {
+      "id": "vector_memory_depth",
+      "score": 0,
+      "autonomous_action": "upsert owner onboarding and draft summaries through policy",
+      "seed_agent": "context_collector",
+      "baseline_tool": "semfs_vector_upsert",
+      "artifact": "seed vector summary",
+      "owner_approval_required": "depends_on_sensitivity",
+      "recommended_default": "Keep vector memory empty until summaries are generated."
+    },
+    {
+      "id": "eval_conformance_coverage",
+      "score": 25,
+      "autonomous_action": "run seed conformance questions and add examples for failures",
+      "seed_agent": "identity_evolution_manager",
+      "baseline_tool": "repo_read",
+      "artifact": "evals/expected-answers.md",
+      "owner_approval_required": false,
+      "recommended_default": "Test owner-minimal, prep-context, and non-owner behavior before route activation."
+    }
+  ],
+  "recommended_next_steps": [
+    "Ask verified owner to approve beginning with identity purpose and profile discovery.",
+    "Draft profile and domain assumptions from any owner-provided description.",
+    "Prepare a public research plan for audience, offers, constraints, and common questions.",
+    "Record intake/lead qualification as a capability gap and draft an inactive proposal."
+  ]
+}

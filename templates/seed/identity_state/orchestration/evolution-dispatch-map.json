@@ -1,0 +1,6 @@
+{
+  "schema_version": "seed_evolution_dispatch_reference.v1",
+  "status": "inactive_reference",
+  "note": "Seed mode uses decision.routing.next and identity_state/orchestration/dispatch-map.json. Future owner-authorized evolution dispatch may be introduced after approval, but no separate evolution routing is active at seed initialization.",
+  "active_seed_dispatch_map": "identity_state/orchestration/dispatch-map.json"
+}

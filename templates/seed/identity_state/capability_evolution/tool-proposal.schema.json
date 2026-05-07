@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "tool-proposal.schema.json",
+  "title": "Tool Proposal",
+  "type": "object",
+  "required": ["proposal_id", "tool_id", "requirement_ref", "security_review", "owner_approval_required", "runtime_support_required", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "proposal_id": { "type": "string" },
+    "tool_id": { "type": "string" },
+    "requirement_ref": { "type": "string" },
+    "security_review": { "type": "string" },
+    "credential_aliases": { "type": "array", "items": { "type": "string" } },
+    "owner_approval_required": { "type": "boolean" },
+    "runtime_support_required": { "type": "boolean" },
+    "registry_update_required": { "type": "boolean" },
+    "status": { "type": "string", "enum": ["draft", "pending_approval", "approved", "implemented", "registered", "rejected", "deferred"] }
+  }
+}

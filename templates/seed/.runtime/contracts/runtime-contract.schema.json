@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "runtime-contract.schema.json",
+  "title": "SemFS Identity Runtime Contract",
+  "type": "object",
+  "required": ["ctx", "msg", "identity", "conversation", "decision", "orchestration", "facets", "outbound", "audit"],
+  "additionalProperties": false,
+  "properties": {
+    "ctx": { "type": "object" },
+    "msg": { "type": "object" },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "repo_ref": { "type": "string" },
+        "status_ref": { "type": "string" },
+        "profile_ref": { "type": "string" },
+        "business_book_ref": { "type": "string" }
+      }
+    },
+    "conversation": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "status_ref": { "type": "string" },
+        "vector_refs": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^semfs://vector/" }
+        },
+        "namespace_refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "properties": {
+        "routing": {
+          "type": "object",
+          "properties": {
+            "next": { "type": "string" }
+          },
+          "required": ["next"]
+        }
+      }
+    },
+    "orchestration": { "type": "object" },
+    "identity_authority": { "type": "object" },
+    "usage": { "type": "object" },
+    "facets": { "type": "object" },
+    "outbound": { "type": "object" },
+    "audit": { "type": "object" }
+  }
+}

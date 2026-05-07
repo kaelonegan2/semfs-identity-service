@@ -1,0 +1,17 @@
+{
+  "schema_version": "research_output_contracts.v1",
+  "contracts": {
+    "research_summary": {
+      "required": ["topic", "summary", "source_quality", "confidence", "uncertainties", "proposed_identity_updates", "owner_review_required"],
+      "optional": ["vector_refs", "followup_questions", "capability_gaps"]
+    },
+    "source_quality_note": {
+      "required": ["source_ref", "source_type", "recency", "authority", "geographic_relevance", "confidence", "limitations"],
+      "optional": ["retrieved_at", "runtime_tool_ref"]
+    },
+    "knowledge_synthesis": {
+      "required": ["proposed_knowledge", "source_basis", "confidence", "review_status"],
+      "optional": ["qa_candidates", "playbook_updates", "offer_updates"]
+    }
+  }
+}

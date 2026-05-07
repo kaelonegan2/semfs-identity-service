@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "activation-record.schema.json",
+  "title": "Capability Activation Record",
+  "type": "object",
+  "required": ["activation_id", "proposal_id", "approved_by_role", "activated_at", "activated_files", "runtime_availability", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "activation_id": { "type": "string" },
+    "proposal_id": { "type": "string" },
+    "approval_ref": { "type": "string" },
+    "approved_by_role": { "type": "string" },
+    "activated_at": { "type": "string" },
+    "activated_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "runtime_availability": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["activated", "partially_activated", "not_dispatchable", "retired"]
+    },
+    "eval_refs": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

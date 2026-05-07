@@ -1,0 +1,12 @@
+{
+  "version": "2026-04-30.seed",
+  "specialists": [],
+  "proposed_inactive": [
+    {
+      "id": "customer_property_memory_specialist",
+      "status": "proposed_inactive",
+      "proposal_ref": "identity_state/capability_evolution/proposals/customer-property-memory-specialist.seed.md"
+    }
+  ],
+  "activation_rule": "No specialist may run until owner approval, runtime support, registry update, prompt, output contract, facet policy, and eval coverage exist."
+}

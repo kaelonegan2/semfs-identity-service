@@ -1,0 +1,24 @@
+{
+  "version": "2026-04-30.seed",
+  "contracts_ref": "identity_state/registries/output-contracts.json",
+  "active_seed_contracts": [
+    "planner_decision",
+    "owner_onboarding",
+    "context_summary",
+    "research_plan",
+    "knowledge_draft",
+    "capability_gap",
+    "capability_proposal",
+    "human_review",
+    "usage_event",
+    "closeout"
+  ],
+  "inactive_future_contracts": [
+    "lead_qualification",
+    "reply_draft",
+    "estimate_packet",
+    "work_packet",
+    "maintenance_followup",
+    "payment_request"
+  ]
+}

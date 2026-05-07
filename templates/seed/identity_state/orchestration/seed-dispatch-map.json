@@ -1,0 +1,7 @@
+{
+  "version": "2026-04-30.seed.legacy-pointer",
+  "role": "legacy_compatibility_pointer",
+  "canonical_dispatch_map": "identity_state/orchestration/dispatch-map.json",
+  "route_field": "decision.routing.next",
+  "note": "Seed dispatch truth has been normalized into the canonical dispatch-map.json. Runtimes should not treat this file as a separate route source."
+}

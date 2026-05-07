@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "semfs.seed.common-prep.schema.json",
+  "title": "Seed Common Prep",
+  "type": "object",
+  "required": ["contract", "prep"],
+  "additionalProperties": false,
+  "properties": {
+    "contract": {
+      "type": "object",
+      "required": ["ctx", "msg", "decision", "orchestration", "facets", "audit"],
+      "additionalProperties": true,
+      "properties": {
+        "ctx": {
+          "type": "object",
+          "required": ["identity_id", "conversation_id"],
+          "properties": {
+            "identity_id": {"type": "string"},
+            "conversation_id": {"type": ["string", "null"]}
+          }
+        },
+        "msg": {
+          "type": "object",
+          "required": ["summary"],
+          "properties": {
+            "summary": {"type": "string"},
+            "raw_ref": {"type": ["string", "null"]}
+          }
+        },
+        "decision": {
+          "type": "object",
+          "required": ["routing"],
+          "properties": {
+            "routing": {
+              "type": "object",
+              "required": ["next"],
+              "properties": {"next": {"type": "string"}}
+            }
+          }
+        },
+        "orchestration": {
+          "type": "object",
+          "required": ["stage"],
+          "properties": {"stage": {"type": "string"}}
+        },
+        "facets": {"type": "object"},
+        "outbound": {"type": "object"},
+        "audit": {"type": "object"}
+      }
+    },
+    "prep": {
+      "type": "object",
+      "required": ["identity", "conversation", "authority", "usage", "vector_context", "available_tools", "output_contract", "prompt_guidance"],
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "type": "object",
+          "required": ["lifecycle_mode", "readiness_score", "known_profile_summary"],
+          "properties": {
+            "lifecycle_mode": {"type": "string"},
+            "readiness_score": {"type": ["number", "integer", "null"]},
+            "known_profile_summary": {"type": "string"}
+          }
+        },
+        "conversation": {
+          "type": "object",
+          "required": ["current_status"],
+          "properties": {"current_status": {"type": "string"}}
+        },
+        "authority": {
+          "type": "object",
+          "required": ["owner_verified", "trust_level"],
+          "properties": {
+            "owner_verified": {"type": "boolean"},
+            "trust_level": {"type": "string"},
+            "approval_state": {"type": "string"}
+          }
+        },
+        "usage": {
+          "type": "object",
+          "required": ["budget_state"],
+          "properties": {"budget_state": {"type": "string"}}
+        },
+        "vector_context": {
+          "type": "object",
+          "required": ["allowed_summaries"],
+          "properties": {
+            "allowed_summaries": {"type": "array", "items": {"type": "object"}}
+          }
+        },
+        "available_tools": {"type": "array", "items": {"type": "string"}},
+        "output_contract": {"type": "object"},
+        "prompt_guidance": {"type": "object"}
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "proposal.schema.json",
+  "title": "Capability Proposal",
+  "type": "object",
+  "required": ["proposal_id", "gap_id", "proposed_change", "authority_required", "activation_requirements", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "proposal_id": { "type": "string" },
+    "gap_id": { "type": "string" },
+    "proposed_change": { "type": "string" },
+    "affected_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "new_routes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "new_tools": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "authority_required": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "activation_requirements": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "pending_approval", "approved", "activated", "rejected", "deferred"]
+    }
+  }
+}

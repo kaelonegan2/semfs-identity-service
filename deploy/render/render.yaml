@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: semfs
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: corepack enable && corepack prepare pnpm@9.15.4 --activate && pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SEMFS_HOST
+        value: 0.0.0.0
+      - key: SEMFS_PORT
+        value: 10000
+      - key: SEMFS_AUTH_TOKEN
+        generateValue: true
+      - key: SEMFS_DEFAULT_IDENTITY_ID
+        value: solo-identity-seed
+      - key: SEMFS_IDENTITY_BACKEND
+        value: github
+      - key: SEMFS_GITHUB_REPO
+        sync: false
+      - key: SEMFS_GITHUB_REF
+        value: main
+      - key: SEMFS_GITHUB_TOKEN
+        sync: false
+      - key: SEMFS_VECTOR_STORE
+        value: memory
+      - key: SEMFS_EMBEDDINGS_BASE_URL
+        value: https://api.openai.com/v1
+      - key: SEMFS_EMBEDDINGS_MODEL
+        value: text-embedding-3-small
+      - key: SEMFS_EMBEDDINGS_API_KEY
+        sync: false
