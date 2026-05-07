@@ -55,7 +55,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     },
     async ({ identity_id, ...rest }) => {
       const mount = container.registry.resolve(identity_id);
-      return text(await container.inbound.prepare(mount, rest));
+      return text(await container.inbound.prepare(mount, { ...rest, auth: activePrincipal }));
     }
   );
 

@@ -89,6 +89,7 @@ describe("SemFS service", () => {
     expect(packet.state).toBe("ready");
     expect((packet.selected as Record<string, unknown>).route).toBe("clarify_intent");
     expect((packet.selected as Record<string, unknown>).agent_id).toBe("owner_onboarding");
+    expect(((packet.response_rules as Record<string, unknown>).posture as Record<string, unknown>).name).toBe("seed_warm_clarification");
     expect(JSON.stringify(packet)).not.toContain("baseline_internal_tools");
     expect(JSON.stringify(packet)).toContain("Runtime User-Facing Guard");
   });
@@ -110,6 +111,8 @@ describe("SemFS service", () => {
 
     expect(inbound.statusCode).toBe(200);
     expect(inbound.json().selected.route).toBe("clarify_intent");
+    expect(inbound.json().access.token_class).toBe("runtime");
+    expect(inbound.json().response_rules.posture.owner_verification).toBe("not_required_for_greeting_or_safe_clarification");
   });
 
   it("prepares dream packets and rejects activation-like findings", async () => {

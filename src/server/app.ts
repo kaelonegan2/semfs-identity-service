@@ -59,7 +59,7 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   app.post("/v1/identities/:identity_id/inbound/prepare", async (request) => {
     requireScope(container, request, "inbound:prepare");
     const mount = container.registry.resolve((request.params as Params).identity_id);
-    return container.inbound.prepare(mount, (request.body ?? {}) as Record<string, unknown>);
+    return container.inbound.prepare(mount, { ...((request.body ?? {}) as Record<string, unknown>), auth: authPrincipal(request) });
   });
 
   app.get("/v1/identities/:identity_id/manifest", async (request) => {
