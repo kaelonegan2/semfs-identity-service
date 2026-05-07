@@ -9,6 +9,7 @@ Authorization: Bearer $SEMFS_AUTH_TOKEN
 Core endpoints:
 
 - `POST /v1/identities/initialize`
+- `GET /v1/identities/:identity_id/status`
 - `GET /v1/identities/:identity_id/manifest`
 - `GET /v1/identities/:identity_id/context`
 - `GET /v1/identities/:identity_id/agents`

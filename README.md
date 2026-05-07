@@ -147,6 +147,7 @@ By default, SemFS refuses to overwrite existing SemFS files. Pass an explicit re
 Identity:
 
 - `POST /v1/identities/initialize`
+- `GET /v1/identities/:identity_id/status`
 - `GET /v1/identities/:identity_id/manifest`
 - `GET /v1/identities/:identity_id/context`
 
@@ -202,6 +203,7 @@ Authorization: Bearer $SEMFS_AUTH_TOKEN
 Core tools:
 
 - `semfs_initialize_identity`
+- `semfs_get_identity_status`
 - `semfs_get_manifest`
 - `semfs_get_agent`
 - `semfs_prepare_agent_action`
@@ -218,13 +220,15 @@ See [docs/mcp.md](docs/mcp.md).
 
 A typical external agent flow is:
 
-1. Call `semfs_get_manifest` to understand the identity structure and lifecycle posture.
-2. Call `semfs_get_agent` for the internal identity agent it needs to act as or consult.
-3. Call `semfs_prepare_agent_action` with the intended task and available context.
-4. Follow the returned prompts, policies, tool permissions, contracts, and memory guidance.
-5. Call `semfs_authorize_agent_action` before authority-bearing or tool-mediated work.
-6. Call `semfs_validate_agent_output` before saving or returning material outputs.
-7. Use review packets or safe artifact writes when the identity requires human review.
+1. Call `semfs_get_identity_status` to determine whether the identity is `ready`, `uninitialized`, or `incomplete`.
+2. If the identity is uninitialized and the runtime is configured to do so, call `semfs_initialize_identity`.
+3. Call `semfs_get_manifest` to understand the identity structure and lifecycle posture.
+4. Call `semfs_get_agent` for the internal identity agent it needs to act as or consult.
+5. Call `semfs_prepare_agent_action` with the intended task and available context.
+6. Follow the returned prompts, policies, tool permissions, contracts, and memory guidance.
+7. Call `semfs_authorize_agent_action` before authority-bearing or tool-mediated work.
+8. Call `semfs_validate_agent_output` before saving or returning material outputs.
+9. Use review packets or safe artifact writes when the identity requires human review.
 
 The seed identity starts conservatively: owner onboarding first, no technical owner burden, safe context capture, and review routing for authority-bearing work.
 

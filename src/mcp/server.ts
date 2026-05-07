@@ -28,6 +28,16 @@ export function createMcpServer(container: SemfsContainer): McpServer {
   );
 
   server.tool(
+    "semfs_get_identity_status",
+    "Check whether a SemFS identity is ready, uninitialized, or incomplete without requiring the full manifest to load.",
+    { identity_id: z.string().default(container.config.defaultIdentityId) },
+    async ({ identity_id }) => {
+      const mount = container.registry.resolve(identity_id);
+      return text(await container.loader.status(mount));
+    }
+  );
+
+  server.tool(
     "semfs_get_manifest",
     "Read the SemFS identity manifest and active runtime surface.",
     { identity_id: z.string().default(container.config.defaultIdentityId) },

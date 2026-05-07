@@ -47,6 +47,11 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   app.get("/mcp", methodNotAllowed);
   app.delete("/mcp", methodNotAllowed);
 
+  app.get("/v1/identities/:identity_id/status", async (request) => {
+    const mount = container.registry.resolve((request.params as Params).identity_id);
+    return container.loader.status(mount);
+  });
+
   app.get("/v1/identities/:identity_id/manifest", async (request) => {
     const { mount, bundle } = await loadIdentity(container, request);
     return { mount: { identity_id: mount.identityId, store: mount.store.label }, manifest: container.loader.manifest(bundle) };

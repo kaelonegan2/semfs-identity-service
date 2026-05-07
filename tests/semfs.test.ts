@@ -23,6 +23,11 @@ describe("SemFS service", () => {
     process.env.SEMFS_IDENTITY_PATH = root;
     const container = createContainer();
 
+    const before = await container.loader.status(container.registry.resolve("test-identity"));
+    expect(before.state).toBe("uninitialized");
+    expect(before.loadable).toBe(false);
+    expect((before.recommended_next as Record<string, unknown>).tool).toBe("semfs_initialize_identity");
+
     await container.seedTemplates.initialize({
       identity_id: "test-identity",
       display_name: "Test Identity",
@@ -30,6 +35,10 @@ describe("SemFS service", () => {
     });
 
     const mount = container.registry.resolve("test-identity");
+    const after = await container.loader.status(mount);
+    expect(after.state).toBe("ready");
+    expect(after.loadable).toBe(true);
+
     const bundle = await container.loader.load(mount);
     const manifest = container.loader.manifest(bundle);
 
@@ -86,6 +95,14 @@ describe("SemFS service", () => {
 
     const unauthorized = await app.inject({ method: "GET", url: "/v1/identities/test-identity/manifest" });
     expect(unauthorized.statusCode).toBe(401);
+
+    const status = await app.inject({
+      method: "GET",
+      url: "/v1/identities/test-identity/status",
+      headers: { authorization: "Bearer test-token" },
+    });
+    expect(status.statusCode).toBe(200);
+    expect(status.json().state).toBe("ready");
 
     const manifest = await app.inject({
       method: "GET",

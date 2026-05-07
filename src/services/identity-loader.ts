@@ -1,6 +1,16 @@
 import { IdentityMount } from "../types/core.js";
 import { readJson, readOptionalText } from "./json.js";
 
+const REQUIRED_JSON_FILES = [
+  "identity_state/lifecycle/current.json",
+  "identity_state/lifecycle/mode-permissions.json",
+  "identity_state/orchestration/dispatch-map.json",
+  "identity_state/registries/agents.json",
+  "identity_state/registries/tools.json",
+  "identity_state/registries/output-contracts.json",
+  "identity_state/registries/facet-policy.json",
+];
+
 export interface IdentityBundle {
   identity_id: string;
   store_label: string;
@@ -25,6 +35,55 @@ export interface IdentityBundle {
 }
 
 export class IdentityLoader {
+  async status(mount: IdentityMount): Promise<Record<string, unknown>> {
+    const existing_required_json: string[] = [];
+    const missing_required_json: string[] = [];
+    const invalid_required_json: Array<{ path: string; error: string }> = [];
+
+    for (const relPath of REQUIRED_JSON_FILES) {
+      if (!(await mount.store.exists(relPath))) {
+        missing_required_json.push(relPath);
+        continue;
+      }
+      existing_required_json.push(relPath);
+      try {
+        JSON.parse(await mount.store.readText(relPath));
+      } catch (error) {
+        invalid_required_json.push({ path: relPath, error: error instanceof Error ? error.message : String(error) });
+      }
+    }
+
+    const loadable = missing_required_json.length === 0 && invalid_required_json.length === 0;
+    const state = loadable ? "ready" : existing_required_json.length === 0 ? "uninitialized" : "incomplete";
+
+    return {
+      identity_id: mount.identityId,
+      store: mount.store.label,
+      state,
+      loadable,
+      manifest_available: loadable,
+      existing_required_json,
+      missing_required_json,
+      invalid_required_json,
+      recommended_next:
+        state === "ready"
+          ? {
+              tool: "semfs_get_manifest",
+              reason: "The identity has the required canonical runtime files.",
+            }
+          : state === "uninitialized"
+            ? {
+                tool: "semfs_initialize_identity",
+                reason: "The identity has no required canonical runtime files yet.",
+                args: { identity_id: mount.identityId, overwrite_mode: "refuse" },
+              }
+            : {
+                tool: "owner_or_admin_review",
+                reason: "The identity has some canonical runtime files but is missing or has invalid required files. Avoid repeated manifest calls until the repo is initialized or repaired.",
+              },
+    };
+  }
+
   async load(mount: IdentityMount): Promise<IdentityBundle> {
     const store = mount.store;
     const lifecycle = await readJson<Record<string, unknown>>(store, "identity_state/lifecycle/current.json");
