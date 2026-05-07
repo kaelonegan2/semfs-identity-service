@@ -107,6 +107,7 @@ describe("SemFS service", () => {
     const yaml = await fs.readFile("deploy/render/render.yaml", "utf8");
     const blueprint = parse(yaml) as { services?: Array<Record<string, unknown>> };
     expect(blueprint.services?.[0]?.healthCheckPath).toBe("/health");
-    expect(blueprint.services?.[0]?.startCommand).toBe("pnpm start");
+    expect(blueprint.services?.[0]?.buildCommand).toBe("corepack pnpm install --frozen-lockfile --prod=false && corepack pnpm build");
+    expect(blueprint.services?.[0]?.startCommand).toBe("node dist/index.js");
   });
 });
