@@ -6,6 +6,8 @@ All endpoints except `/health` require:
 Authorization: Bearer $SEMFS_AUTH_TOKEN
 ```
 
+Credentials are scoped server-side. `SEMFS_AUTH_TOKEN` is a backward-compatible admin token; deployments can also configure admin, owner runtime, runtime, readonly, and public tokens.
+
 Core endpoints:
 
 - `POST /v1/identities/initialize`

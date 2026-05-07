@@ -16,6 +16,16 @@ services:
         value: 10000
       - key: SEMFS_AUTH_TOKEN
         generateValue: true
+      - key: SEMFS_ADMIN_AUTH_TOKEN
+        sync: false
+      - key: SEMFS_OWNER_RUNTIME_AUTH_TOKEN
+        sync: false
+      - key: SEMFS_RUNTIME_AUTH_TOKEN
+        sync: false
+      - key: SEMFS_READONLY_AUTH_TOKEN
+        sync: false
+      - key: SEMFS_PUBLIC_ACCESS
+        value: false
       - key: SEMFS_DEFAULT_IDENTITY_ID
         value: solo-identity-seed
       - key: SEMFS_IDENTITY_BACKEND

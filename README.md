@@ -76,6 +76,16 @@ All endpoints except `/health` require bearer auth:
 Authorization: Bearer $SEMFS_AUTH_TOKEN
 ```
 
+SemFS supports scoped credentials. `SEMFS_AUTH_TOKEN` is kept as a backward-compatible admin token. For hosted runtimes, prefer class-specific tokens:
+
+- `SEMFS_ADMIN_AUTH_TOKEN`: initialization and administrative repair.
+- `SEMFS_OWNER_RUNTIME_AUTH_TOKEN`: owner-authorized runtime work without seed replacement.
+- `SEMFS_RUNTIME_AUTH_TOKEN`: normal agent runtime access.
+- `SEMFS_READONLY_AUTH_TOKEN`: inspection-only access.
+- `SEMFS_PUBLIC_AUTH_TOKEN` or `SEMFS_PUBLIC_ACCESS=true`: public status-only access.
+
+MCP tools are registered per request from the authenticated credential's scopes. A runtime token cannot expose admin-only tools to the model.
+
 ## Environment
 
 Common local configuration:
@@ -84,6 +94,7 @@ Common local configuration:
 SEMFS_HOST=127.0.0.1
 SEMFS_PORT=8787
 SEMFS_AUTH_TOKEN=dev-token-change-me
+SEMFS_RUNTIME_AUTH_TOKEN=runtime-token-change-me
 SEMFS_DEFAULT_IDENTITY_ID=solo-identity-seed
 SEMFS_IDENTITY_BACKEND=local
 SEMFS_IDENTITY_PATH=./data/identity
@@ -215,6 +226,8 @@ Core tools:
 - `semfs_vector_search`
 
 See [docs/mcp.md](docs/mcp.md).
+
+A versioned starter runtime prompt for external agents is available at [docs/runtime-prompt.md](docs/runtime-prompt.md).
 
 ## Agent Flow
 

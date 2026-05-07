@@ -13,6 +13,13 @@ async function tempIdentityRoot() {
 describe("SemFS service", () => {
   beforeEach(() => {
     process.env.SEMFS_AUTH_TOKEN = "test-token";
+    delete process.env.SEMFS_ADMIN_AUTH_TOKEN;
+    delete process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN;
+    delete process.env.SEMFS_RUNTIME_AUTH_TOKEN;
+    delete process.env.SEMFS_READONLY_AUTH_TOKEN;
+    delete process.env.SEMFS_PUBLIC_AUTH_TOKEN;
+    delete process.env.SEMFS_PUBLIC_ACCESS;
+    delete process.env.SEMFS_AUTH_TOKENS;
     process.env.SEMFS_DEFAULT_IDENTITY_ID = "test-identity";
     process.env.SEMFS_IDENTITY_BACKEND = "local";
     process.env.SEMFS_VECTOR_STORE = "memory";
@@ -118,6 +125,39 @@ describe("SemFS service", () => {
       headers: { authorization: "Bearer test-token" },
     });
     expect(mcpGet.statusCode).toBe(405);
+  });
+
+  it("enforces token-derived REST scopes", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const app = await createApp(container);
+
+    const status = await app.inject({
+      method: "GET",
+      url: "/v1/identities/test-identity/status",
+      headers: { authorization: "Bearer runtime-token" },
+    });
+    expect(status.statusCode).toBe(200);
+    expect(status.json().auth.token_class).toBe("runtime");
+
+    const init = await app.inject({
+      method: "POST",
+      url: "/v1/identities/initialize",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: { identity_id: "test-identity" },
+    });
+    expect(init.statusCode).toBe(403);
+
+    const adminInit = await app.inject({
+      method: "POST",
+      url: "/v1/identities/initialize",
+      headers: { authorization: "Bearer test-token" },
+      payload: { identity_id: "test-identity" },
+    });
+    expect(adminInit.statusCode).toBe(409);
   });
 
   it("ships a valid Render blueprint", async () => {

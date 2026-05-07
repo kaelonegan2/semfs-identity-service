@@ -1,6 +1,7 @@
 import { loadConfig } from "../config/config.js";
 import { IdentityRegistry } from "../stores/registry.js";
 import { AgentService } from "./agent-service.js";
+import { AuthService } from "./auth-service.js";
 import { DreamService } from "./dream-service.js";
 import { IdentityLoader } from "./identity-loader.js";
 import { PolicyService } from "./policy-service.js";
@@ -16,6 +17,7 @@ export function createContainer() {
   const writer = new SafeWriter();
   return {
     config,
+    auth: new AuthService(config.authPrincipals, config.allowPublicAccess),
     registry,
     loader,
     policy,

@@ -15,6 +15,8 @@ Authorization: Bearer $SEMFS_AUTH_TOKEN
 
 Use the HTTP endpoint for hosted deployments such as Render.
 
+MCP tools are exposed according to the credential used to connect. For example, a runtime token can read identity state and prepare actions, while an admin token can also initialize an identity.
+
 Important tools:
 
 - `semfs_initialize_identity`

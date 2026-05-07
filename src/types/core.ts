@@ -2,6 +2,31 @@ export type JsonObject = Record<string, unknown>;
 
 export type BackendKind = "local" | "github";
 
+export type AuthScope =
+  | "identity:status"
+  | "identity:initialize"
+  | "identity:read"
+  | "agent:read"
+  | "agent:prepare"
+  | "agent:authorize"
+  | "agent:validate"
+  | "run:prepare"
+  | "memory:search"
+  | "memory:write"
+  | "artifact:safe_write"
+  | "review:write"
+  | "approval:write"
+  | "dream:prepare"
+  | "dream:validate"
+  | "dream:write";
+
+export interface AuthPrincipal {
+  id: string;
+  tokenClass: "public" | "readonly" | "runtime" | "owner_runtime" | "admin";
+  scopes: AuthScope[];
+  token?: string;
+}
+
 export interface WriteResult {
   path: string;
   wrote: boolean;
@@ -28,6 +53,8 @@ export interface SemfsConfig {
   host: string;
   port: number;
   authToken: string;
+  authPrincipals: AuthPrincipal[];
+  allowPublicAccess: boolean;
   defaultIdentityId: string;
   backend: BackendKind;
   identityPath?: string;

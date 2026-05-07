@@ -9,11 +9,20 @@ Use the GitHub identity backend on Render. Render web services have an ephemeral
 Required environment variables:
 
 - `SEMFS_AUTH_TOKEN`
+- `SEMFS_RUNTIME_AUTH_TOKEN`
 - `SEMFS_DEFAULT_IDENTITY_ID`
 - `SEMFS_IDENTITY_BACKEND=github`
 - `SEMFS_GITHUB_REPO`
 - `SEMFS_GITHUB_REF`
 - `SEMFS_GITHUB_TOKEN`
+
+Optional scoped credential variables:
+
+- `SEMFS_ADMIN_AUTH_TOKEN`
+- `SEMFS_OWNER_RUNTIME_AUTH_TOKEN`
+- `SEMFS_READONLY_AUTH_TOKEN`
+- `SEMFS_PUBLIC_AUTH_TOKEN`
+- `SEMFS_PUBLIC_ACCESS=false`
 
 Optional embedding variables:
 

@@ -1,13 +1,19 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { SemfsContainer } from "../services/container.js";
+import { AuthPrincipal, AuthScope } from "../types/core.js";
 
 function text(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
 }
 
-export function createMcpServer(container: SemfsContainer): McpServer {
+export function createMcpServer(container: SemfsContainer, principal?: AuthPrincipal): McpServer {
   const server = new McpServer({ name: "semfs", version: "0.1.0" });
+  const activePrincipal = principal ?? { id: "legacy-admin", tokenClass: "admin" as const, scopes: container.config.authPrincipals[0]?.scopes ?? [] };
+
+  function has(scope: AuthScope): boolean {
+    return container.auth.hasScope(activePrincipal, scope);
+  }
 
   async function load(identityId: string) {
     const mount = container.registry.resolve(identityId);
@@ -15,7 +21,7 @@ export function createMcpServer(container: SemfsContainer): McpServer {
     return { mount, bundle };
   }
 
-  server.tool(
+  if (has("identity:initialize")) server.tool(
     "semfs_initialize_identity",
     "Initialize a target repo with the business-neutral SemFS seed identity template.",
     {
@@ -27,17 +33,17 @@ export function createMcpServer(container: SemfsContainer): McpServer {
     async (args) => text(await container.seedTemplates.initialize(args))
   );
 
-  server.tool(
+  if (has("identity:status")) server.tool(
     "semfs_get_identity_status",
     "Check whether a SemFS identity is ready, uninitialized, or incomplete without requiring the full manifest to load.",
     { identity_id: z.string().default(container.config.defaultIdentityId) },
     async ({ identity_id }) => {
       const mount = container.registry.resolve(identity_id);
-      return text(await container.loader.status(mount));
+      return text({ ...(await container.loader.status(mount)), auth: container.auth.context(activePrincipal) });
     }
   );
 
-  server.tool(
+  if (has("identity:read")) server.tool(
     "semfs_get_manifest",
     "Read the SemFS identity manifest and active runtime surface.",
     { identity_id: z.string().default(container.config.defaultIdentityId) },
@@ -47,7 +53,7 @@ export function createMcpServer(container: SemfsContainer): McpServer {
     }
   );
 
-  server.tool(
+  if (has("agent:read")) server.tool(
     "semfs_get_agent",
     "Retrieve an internal identity agent manifest with prompt, tools, policies, contracts, skills, specialists, and memory access.",
     { identity_id: z.string().default(container.config.defaultIdentityId), agent_id: z.string() },
@@ -57,7 +63,7 @@ export function createMcpServer(container: SemfsContainer): McpServer {
     }
   );
 
-  server.tool(
+  if (has("agent:prepare")) server.tool(
     "semfs_prepare_agent_action",
     "Prepare contract and prep for an outside runtime to act as an identity agent.",
     {
@@ -75,7 +81,7 @@ export function createMcpServer(container: SemfsContainer): McpServer {
     }
   );
 
-  server.tool(
+  if (has("agent:authorize")) server.tool(
     "semfs_authorize_agent_action",
     "Authorize a requested tool or action as a specific identity agent.",
     {
@@ -90,7 +96,7 @@ export function createMcpServer(container: SemfsContainer): McpServer {
     }
   );
 
-  server.tool(
+  if (has("agent:validate")) server.tool(
     "semfs_validate_agent_output",
     "Validate an agent output against its output contract, route policy, and facet policy.",
     {
@@ -104,7 +110,7 @@ export function createMcpServer(container: SemfsContainer): McpServer {
     }
   );
 
-  server.tool(
+  if (has("dream:prepare")) server.tool(
     "semfs_prepare_dream",
     "Prepare a bounded autonomous maturation evaluation packet.",
     {
@@ -118,11 +124,11 @@ export function createMcpServer(container: SemfsContainer): McpServer {
     }
   );
 
-  server.tool("semfs_validate_dream", "Validate dream findings before safe writeback.", { findings_json: z.string() }, async ({ findings_json }) =>
+  if (has("dream:validate")) server.tool("semfs_validate_dream", "Validate dream findings before safe writeback.", { findings_json: z.string() }, async ({ findings_json }) =>
     text(container.dreams.validate(JSON.parse(findings_json)))
   );
 
-  server.tool(
+  if (has("dream:write")) server.tool(
     "semfs_write_safe_dream_outputs",
     "Write validated safe dream findings as SemFS artifacts.",
     { identity_id: z.string().default(container.config.defaultIdentityId), findings_json: z.string() },
@@ -132,7 +138,7 @@ export function createMcpServer(container: SemfsContainer): McpServer {
     }
   );
 
-  server.tool(
+  if (has("memory:search")) server.tool(
     "semfs_vector_search",
     "Search policy-filtered SemFS vector summaries.",
     {

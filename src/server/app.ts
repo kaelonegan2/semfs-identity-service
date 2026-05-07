@@ -3,6 +3,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { SemfsContainer } from "../services/container.js";
 import { SemfsError } from "../utils/errors.js";
 import { createMcpServer } from "../mcp/server.js";
+import { AuthPrincipal, AuthScope } from "../types/core.js";
 
 type Params = Record<string, string>;
 
@@ -20,20 +21,22 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
 
   app.addHook("preHandler", async (request, reply) => {
     if (request.url === "/health") return;
-    const expected = `Bearer ${container.config.authToken}`;
-    if (request.headers.authorization !== expected) {
-      reply.status(401).send({ error: "unauthorized" });
+    const principal = container.auth.authenticate(request.headers.authorization);
+    if (!principal) {
+      return reply.status(401).send({ error: "unauthorized" });
     }
+    (request as FastifyRequest & { semfsAuth: AuthPrincipal }).semfsAuth = principal;
   });
 
   app.get("/health", async () => ({ ok: true, service: "semfs" }));
 
   app.post("/v1/identities/initialize", async (request) => {
+    requireScope(container, request, "identity:initialize");
     return container.seedTemplates.initialize((request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/mcp", async (request, reply) => {
-    const mcpServer = createMcpServer(container);
+    const mcpServer = createMcpServer(container, authPrincipal(request));
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     await mcpServer.connect(transport);
     await transport.handleRequest(request.raw, reply.raw, request.body);
@@ -48,16 +51,19 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   app.delete("/mcp", methodNotAllowed);
 
   app.get("/v1/identities/:identity_id/status", async (request) => {
+    requireScope(container, request, "identity:status");
     const mount = container.registry.resolve((request.params as Params).identity_id);
-    return container.loader.status(mount);
+    return { ...(await container.loader.status(mount)), auth: container.auth.context(authPrincipal(request)) };
   });
 
   app.get("/v1/identities/:identity_id/manifest", async (request) => {
+    requireScope(container, request, "identity:read");
     const { mount, bundle } = await loadIdentity(container, request);
     return { mount: { identity_id: mount.identityId, store: mount.store.label }, manifest: container.loader.manifest(bundle) };
   });
 
   app.get("/v1/identities/:identity_id/context", async (request) => {
+    requireScope(container, request, "identity:read");
     const { bundle } = await loadIdentity(container, request);
     return {
       identity_id: bundle.identity_id,
@@ -71,36 +77,43 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   });
 
   app.get("/v1/identities/:identity_id/agents", async (request) => {
+    requireScope(container, request, "agent:read");
     const { bundle } = await loadIdentity(container, request);
     return container.agents.listAgents(bundle);
   });
 
   app.get("/v1/identities/:identity_id/agents/:agent_id", async (request) => {
+    requireScope(container, request, "agent:read");
     const { mount, bundle } = await loadIdentity(container, request);
     return container.agents.getAgent(mount, bundle, (request.params as Params).agent_id);
   });
 
   app.post("/v1/identities/:identity_id/agents/:agent_id/prepare-action", async (request) => {
+    requireScope(container, request, "agent:prepare");
     const { mount, bundle } = await loadIdentity(container, request);
     return container.agents.prepareAction(mount, bundle, (request.params as Params).agent_id, (request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/v1/identities/:identity_id/agents/:agent_id/authorize-action", async (request) => {
+    requireScope(container, request, "agent:authorize");
     const { bundle } = await loadIdentity(container, request);
     return container.agents.authorizeAction(bundle, (request.params as Params).agent_id, (request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/v1/identities/:identity_id/agents/:agent_id/validate-output", async (request) => {
+    requireScope(container, request, "agent:validate");
     const { bundle } = await loadIdentity(container, request);
     return container.agents.validateOutput(bundle, (request.params as Params).agent_id, (request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/v1/identities/:identity_id/runs/prepare-planner", async (request) => {
+    requireScope(container, request, "run:prepare");
     const { mount, bundle } = await loadIdentity(container, request);
     return container.agents.prepareAction(mount, bundle, "runtime_orchestration_planner", (request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/v1/identities/:identity_id/runs/resolve-route", async (request) => {
+    requireScope(container, request, "run:prepare");
     const { bundle } = await loadIdentity(container, request);
     const body = (request.body ?? {}) as Record<string, unknown>;
     const route = String(body.route ?? body.next ?? "");
@@ -109,6 +122,7 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   });
 
   app.post("/v1/identities/:identity_id/runs/prepare-agent", async (request) => {
+    requireScope(container, request, "run:prepare");
     const { mount, bundle } = await loadIdentity(container, request);
     const body = (request.body ?? {}) as Record<string, unknown>;
     const route = String(body.route ?? "");
@@ -117,6 +131,7 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   });
 
   app.post("/v1/identities/:identity_id/runs/hydrate", async (request) => {
+    requireScope(container, request, "run:prepare");
     const { bundle } = await loadIdentity(container, request);
     const body = (request.body ?? {}) as Record<string, unknown>;
     return {
@@ -126,42 +141,50 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   });
 
   app.post("/v1/identities/:identity_id/vector/upsert", async (request) => {
+    requireScope(container, request, "memory:write");
     const { bundle } = await loadIdentity(container, request);
     return container.vectors.upsert(bundle, (request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/v1/identities/:identity_id/vector/search", async (request) => {
+    requireScope(container, request, "memory:search");
     const { bundle } = await loadIdentity(container, request);
     return container.vectors.search(bundle, (request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/v1/identities/:identity_id/artifacts/write-safe", async (request) => {
+    requireScope(container, request, "artifact:safe_write");
     const { mount } = await loadIdentity(container, request);
     const body = (request.body ?? {}) as Record<string, unknown>;
     return container.writer.writeSafe(mount, String(body.path ?? ""), String(body.content ?? ""), String(body.message ?? "semfs: safe artifact write"));
   });
 
   app.post("/v1/identities/:identity_id/review-packets", async (request) => {
+    requireScope(container, request, "review:write");
     const { mount } = await loadIdentity(container, request);
     return container.writer.createReviewPacket(mount, (request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/v1/identities/:identity_id/approvals", async (request) => {
+    requireScope(container, request, "approval:write");
     const { mount } = await loadIdentity(container, request);
     return container.writer.captureApproval(mount, (request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/v1/identities/:identity_id/dreams/prepare", async (request) => {
+    requireScope(container, request, "dream:prepare");
     const { bundle } = await loadIdentity(container, request);
     return container.dreams.prepare(bundle, (request.body ?? {}) as Record<string, unknown>);
   });
 
   app.post("/v1/identities/:identity_id/dreams/validate", async (request) => {
+    requireScope(container, request, "dream:validate");
     const body = (request.body ?? {}) as Record<string, unknown>;
     return container.dreams.validate((body.findings ?? []) as never[]);
   });
 
   app.post("/v1/identities/:identity_id/dreams/write-safe", async (request) => {
+    requireScope(container, request, "dream:write");
     const { mount } = await loadIdentity(container, request);
     const body = (request.body ?? {}) as Record<string, unknown>;
     return container.dreams.writeSafe(mount, (body.findings ?? []) as never[]);
@@ -183,6 +206,14 @@ async function loadIdentity(container: SemfsContainer, request: FastifyRequest) 
   const mount = container.registry.resolve(params.identity_id);
   const bundle = await container.loader.load(mount);
   return { mount, bundle };
+}
+
+function authPrincipal(request: FastifyRequest): AuthPrincipal {
+  return (request as FastifyRequest & { semfsAuth: AuthPrincipal }).semfsAuth;
+}
+
+function requireScope(container: SemfsContainer, request: FastifyRequest, scope: AuthScope): void {
+  container.auth.requireScope(authPrincipal(request), scope);
 }
 
 export async function startServer(container: SemfsContainer): Promise<void> {
