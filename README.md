@@ -1,10 +1,18 @@
 # SemFS Identity Service
 
-SemFS is an open source identity service for AI agents. It gives external agents a stable REST and MCP surface for understanding, using, and safely maturing an identity repository.
+SemFS is an open source identity service for AI agents, created by Kaelon Egan. It gives external agents a stable REST and MCP surface for understanding, using, and safely maturing an identity repository.
+
+The project is MIT licensed so builders can use, fork, host, and extend it freely. The goal is to make identity repositories a practical substrate for agent runtime, memory, policy, review, and maturation.
 
 An identity repository can represent a person, project, team, business, product, or other long-lived operating context. SemFS makes that repository agent-readable: it exposes the identity manifest, lifecycle state, internal agents, roles, policies, prompts, tools, specialists, skills, semantic memory namespaces, review flows, and safe write targets.
 
 SemFS does not run LLMs. It prepares context, authorizes actions, validates outputs, and writes only explicitly safe artifacts. Reasoning and execution happen in the calling agent or runtime.
+
+## Project Status
+
+SemFS is early, active infrastructure. The V1 boundary is intentionally conservative: it can initialize seed identity repositories, prepare runtime context, expose scoped MCP tools, validate policy, and write safe artifacts, but it does not autonomously activate capabilities or perform external side effects.
+
+The seed identity is designed to mature safely. It starts under-contextualized, collects owner-approved direction over time, records gaps, prepares review packets, and supports bounded "dreaming" flows for identity evolution proposals.
 
 ## What SemFS Provides
 
@@ -49,6 +57,15 @@ SemFS intentionally does not:
 - bypass review for authority-bearing actions
 
 Those remain outside the V1 execution boundary.
+
+## Design Principles
+
+- Identity state should be repository-backed, inspectable, and versionable.
+- Agents should hydrate identity context before acting.
+- Runtime authority should come from scoped credentials and identity policy, not from model claims.
+- Memory should be policy-filtered and namespace-aware.
+- Maturation should produce reviewable findings and proposals, not silent capability activation.
+- Public, runtime, owner-runtime, and admin access should expose different surfaces.
 
 ## Quick Start
 
@@ -317,4 +334,6 @@ tests/             Service tests
 
 ## License
 
-MIT
+MIT. See [LICENSE](LICENSE).
+
+Copyright (c) 2026 Kaelon Egan and SemFS contributors.

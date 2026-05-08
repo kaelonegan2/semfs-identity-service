@@ -1,0 +1,7 @@
+SemFS Identity Service
+
+SemFS was created by Kaelon Egan as an open source identity substrate for AI agent runtimes.
+
+The project explores repository-backed identities that agents can inspect, use, and mature safely through scoped access, policy-governed memory, review flows, and bounded capability evolution.
+
+SemFS is distributed under the MIT License. See LICENSE for the full license text.

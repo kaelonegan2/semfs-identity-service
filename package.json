@@ -2,6 +2,25 @@
   "name": "semfs",
   "version": "0.1.0",
   "description": "SemFS identity service for agent-readable, policy-governed identity repositories.",
+  "license": "MIT",
+  "author": "Kaelon Egan",
+  "homepage": "https://github.com/kaelonegan2/semfs-identity-service#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kaelonegan2/semfs-identity-service.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kaelonegan2/semfs-identity-service/issues"
+  },
+  "keywords": [
+    "semfs",
+    "identity",
+    "ai-agents",
+    "mcp",
+    "semantic-memory",
+    "agent-runtime",
+    "identity-management"
+  ],
   "type": "module",
   "packageManager": "pnpm@9.15.4",
   "main": "dist/index.js",
