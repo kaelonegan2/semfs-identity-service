@@ -39,7 +39,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     { identity_id: z.string().default(container.config.defaultIdentityId) },
     async ({ identity_id }) => {
       const mount = container.registry.resolve(identity_id);
-      return text({ ...(await container.loader.status(mount)), auth: container.auth.context(activePrincipal) });
+      return text(container.auth.statusResponse(await container.loader.status(mount), activePrincipal));
     }
   );
 

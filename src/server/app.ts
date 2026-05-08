@@ -53,7 +53,7 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   app.get("/v1/identities/:identity_id/status", async (request) => {
     requireScope(container, request, "identity:status");
     const mount = container.registry.resolve((request.params as Params).identity_id);
-    return { ...(await container.loader.status(mount)), auth: container.auth.context(authPrincipal(request)) };
+    return container.auth.statusResponse(await container.loader.status(mount), authPrincipal(request));
   });
 
   app.post("/v1/identities/:identity_id/inbound/prepare", async (request) => {

@@ -77,11 +77,52 @@ export class AuthService {
   }
 
   context(principal: AuthPrincipal): Record<string, unknown> {
+    const tokenClass = principal.tokenClass;
+    const ownerVerifiedByCredential = tokenClass === "owner_runtime";
+    const ownerCapable = ownerVerifiedByCredential || tokenClass === "admin";
     return {
       principal_id: principal.id,
-      token_class: principal.tokenClass,
+      token_class: tokenClass,
+      runtime_authority:
+        tokenClass === "admin"
+          ? "admin"
+          : tokenClass === "owner_runtime"
+            ? "owner_runtime"
+            : tokenClass === "runtime"
+              ? "runtime"
+              : tokenClass === "readonly"
+                ? "readonly"
+                : "public",
+      owner_capable_credential: ownerCapable,
+      owner_verified_by_credential: ownerVerifiedByCredential,
+      inbound_preparation_available: this.hasScope(principal, "inbound:prepare"),
+      interpretation:
+        tokenClass === "admin"
+          ? "Credential can administer SemFS. It is not owner verification for an inbound user unless runtime context also says so."
+          : tokenClass === "owner_runtime"
+            ? "Credential represents an owner-authorized runtime. Do not ask for separate owner verification unless a specific identity policy or approval step requires it."
+            : tokenClass === "runtime"
+              ? "Credential represents an expected trusted runtime, not owner authority."
+              : tokenClass === "readonly"
+                ? "Credential can inspect identity state but should not write or take authority-bearing actions."
+                : "Public access: expose only public-safe behavior.",
       scopes: principal.scopes,
     };
+  }
+
+  statusResponse(status: Record<string, unknown>, principal: AuthPrincipal): Record<string, unknown> {
+    const response: Record<string, unknown> = { ...status, auth: this.context(principal) };
+    if (status.state === "ready" && this.hasScope(principal, "inbound:prepare")) {
+      response.recommended_next = {
+        tool: "semfs_prepare_inbound",
+        reason:
+          "The identity is ready. For a human or external inbound message, prepare a compact identity-aware runtime packet before reading the full manifest or responding.",
+        args: { identity_id: status.identity_id },
+      };
+      response.runtime_instruction =
+        "For inbound handling, call semfs_prepare_inbound next. Treat owner_runtime credentials as owner-authorized runtime context. Do not ask for separate owner verification unless a specific policy or approval step requires it.";
+    }
+    return response;
   }
 
   private redact(principal: AuthPrincipal): AuthPrincipal {

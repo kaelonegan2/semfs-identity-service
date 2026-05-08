@@ -124,6 +124,18 @@ describe("SemFS service", () => {
     expect(inbound.json().access.token_class).toBe("runtime");
     expect(inbound.json().response_rules.posture.owner_verification).toBe("not_required_for_greeting_or_safe_clarification");
 
+    const ownerStatus = await app.inject({
+      method: "GET",
+      url: "/v1/identities/test-identity/status",
+      headers: { authorization: "Bearer owner-runtime-token" },
+    });
+
+    expect(ownerStatus.statusCode).toBe(200);
+    expect(ownerStatus.json().auth.token_class).toBe("owner_runtime");
+    expect(ownerStatus.json().auth.owner_verified_by_credential).toBe(true);
+    expect(ownerStatus.json().recommended_next.tool).toBe("semfs_prepare_inbound");
+    expect(ownerStatus.json().runtime_instruction).toContain("Do not ask for separate owner verification");
+
     const runtimeIdentityShapingInbound = await app.inject({
       method: "POST",
       url: "/v1/identities/test-identity/inbound/prepare",
@@ -189,6 +201,7 @@ describe("SemFS service", () => {
     });
     expect(status.statusCode).toBe(200);
     expect(status.json().state).toBe("ready");
+    expect(status.json().recommended_next.tool).toBe("semfs_prepare_inbound");
 
     const manifest = await app.inject({
       method: "GET",
