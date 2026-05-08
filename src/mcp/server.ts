@@ -52,6 +52,8 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
       conversation_id: z.string().nullable().optional(),
       owner_verified: z.boolean().optional(),
       trust_level: z.string().optional(),
+      risk_detected: z.boolean().optional(),
+      risk_category: z.string().optional(),
     },
     async ({ identity_id, ...rest }) => {
       const mount = container.registry.resolve(identity_id);

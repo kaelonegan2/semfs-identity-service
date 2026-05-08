@@ -8,29 +8,10 @@ interface PrepareInboundInput {
   conversation_id?: string | null;
   owner_verified?: boolean;
   trust_level?: string;
+  risk_detected?: boolean;
+  risk_category?: string;
   auth?: AuthPrincipal;
 }
-
-const RISK_PATTERNS = [
-  "refund",
-  "invoice",
-  "double charged",
-  "payment",
-  "charge",
-  "credential",
-  "password",
-  "publish",
-  "send",
-  "schedule",
-  "price",
-  "quote",
-  "contract",
-  "legal",
-  "approve",
-  "activate",
-];
-
-const OWNER_SETUP_PATTERNS = ["owner", "setup", "configure", "onboard", "identity", "what should", "start"];
 
 export class InboundService {
   constructor(
@@ -58,7 +39,7 @@ export class InboundService {
 
     const bundle = await this.loader.load(mount);
     const routes = this.policy.activeRoutes(bundle);
-    const routeId = this.selectRoute(bundle, routes, input);
+    const routeId = this.selectRoute(bundle, routes, input, access);
     const route = routes[routeId];
     const agentId = String(route?.agent_id ?? this.firstActiveAgent(bundle) ?? "stop");
     const agent = this.policy.agentRecord(bundle, agentId);
@@ -74,9 +55,11 @@ export class InboundService {
       inbound: {
         message_summary: this.compactMessage(input.message),
         low_information: this.isLowInformation(input.message),
-        risk_detected: this.hasRisk(input.message),
-        owner_verified: Boolean(input.owner_verified),
-        trust_level: input.trust_level ?? (input.owner_verified ? "verified_owner" : "unverified"),
+        risk_detected: Boolean(input.risk_detected),
+        risk_category: input.risk_category ?? null,
+        owner_verified: this.effectiveOwnerVerified(input, access),
+        owner_verified_from_runtime_context: Boolean(input.owner_verified),
+        trust_level: input.trust_level ?? (this.effectiveOwnerVerified(input, access) ? "verified_owner" : "unverified"),
       },
       access,
       identity: {
@@ -91,7 +74,7 @@ export class InboundService {
         route: routeId,
         agent_id: agentId,
         trust_required: route?.trust_required ?? "unspecified",
-        reason: this.routeReason(routeId, input),
+        reason: this.routeReason(routeId, input, access),
       },
       agent: {
         id: agentId,
@@ -125,9 +108,9 @@ export class InboundService {
   private responsePosture(bundle: IdentityBundle, input: PrepareInboundInput, access: Record<string, unknown>): Record<string, unknown> {
     const lifecycleMode = String(bundle.lifecycle.current_mode ?? "unknown");
     const lowInformation = this.isLowInformation(input.message);
-    const riskDetected = this.hasRisk(input.message);
-    const ownerSetupIntent = this.hasOwnerSetupIntent(input.message);
+    const riskDetected = Boolean(input.risk_detected);
     const tokenClass = String(access.token_class);
+    const ownerVerified = this.effectiveOwnerVerified(input, access);
 
     if (tokenClass === "public") {
       return {
@@ -168,60 +151,119 @@ export class InboundService {
       };
     }
 
-    if (lifecycleMode.includes("seed") && ownerSetupIntent && !input.owner_verified) {
+    if (lifecycleMode.includes("seed") && tokenClass === "runtime") {
       return {
-        name: "seed_owner_context_without_authority",
-        style: "warm_context_collection",
-        owner_verification: "required_before_accepting_configuration_as_authoritative",
-        user_goal: "Collect intent and context as provisional, without treating it as approved owner configuration.",
-        ask: "Ask for the desired outcome in plain language.",
-        avoid: ["technical setup questions", "accepting approval", "activating capabilities"],
+        name: "seed_expected_runtime_intake",
+        style: "clear_early_state_plain_language",
+        owner_verification: "runtime_is_expected_but_not_owner_authority",
+        user_goal:
+          "Respond as an initialized seed identity in an expected runtime. Explore the request safely, but do not treat identity-shaping input as a draft profile or approved configuration.",
+        ask:
+          "Ask the smallest useful question that helps understand the request. For identity-shaping requests, ask what the identity should understand first, while making clear that owner approval is required before it becomes part of the identity.",
+        safe_options: [
+          "explore what the identity could become",
+          "explain what the seed can safely do now",
+          "prepare questions or an owner review packet",
+        ],
+        mention_boundary:
+          "Say the identity is still early and can explore direction now, but profile changes, authority, capabilities, sends, publishing, payments, and commitments require owner approval.",
+        avoid: [
+          "calling user input a draft profile",
+          "saying changes can be applied after owner verification flow unless such a flow is actually exposed",
+          "claiming mature capability is already active",
+          "asking technical setup questions",
+          "role-playing as permanent identity",
+        ],
+      };
+    }
+
+    if (lifecycleMode.includes("seed") && ownerVerified) {
+      return {
+        name: "seed_verified_owner_intake",
+        style: "warm_plain_language_owner_setup",
+        owner_verification: "verified_by_runtime_context_or_credential",
+        user_goal:
+          "Handle the current request as owner-authorized seed intake while keeping durable changes draft and approval-aware.",
+        ask: "Ask the smallest useful next question. For identity-shaping requests, ask for purpose, voice, priorities, and boundaries.",
+        safe_options: [
+          "describe the identity purpose",
+          "describe the voice and decision style",
+          "ask what this identity can safely do now",
+          "name boundaries or things it must not do",
+        ],
+        mention_boundary:
+          "Keep setup collaborative. Durable profile or capability changes can be drafted now and applied through the identity's approval path.",
+        avoid: ["technical setup questions", "claiming mature capability is already active", "external sends", "publishing", "payments"],
+      };
+    }
+
+    if (lifecycleMode.includes("seed") && !ownerVerified) {
+      return {
+        name: "seed_unverified_or_readonly_intake",
+        style: "clear_limited_context_collection",
+        owner_verification: "required_before_accepting_configuration_or_authority_as_authoritative",
+        user_goal:
+          "Handle safe clarification and collect exploratory input only. Do not treat identity-shaping or authority-bearing requests as a draft profile, approved configuration, or accepted identity memory.",
+        ask:
+          "Ask the smallest useful next question. If the request would shape the identity, explain that it can be explored now but needs owner approval before becoming identity state.",
+        safe_options: [
+          "clarify what the user wants help with",
+          "explore possible identity direction",
+          "route authority-bearing work to review",
+        ],
+        avoid: [
+          "calling user input a draft profile",
+          "technical setup questions",
+          "accepting approval",
+          "activating capabilities",
+          "role-playing as permanent identity",
+        ],
       };
     }
 
     return {
       name: "identity_default_intake",
       style: "natural_identity_response",
-      owner_verification: input.owner_verified ? "verified_by_runtime_context" : "not_required_until_authority_boundary",
+      owner_verification: ownerVerified ? "verified_by_runtime_context_or_credential" : "not_required_until_authority_boundary",
       user_goal: "Respond naturally according to identity guidance and ask only the smallest useful next question.",
       ask: "Ask the next question implied by the identity route and current request.",
       avoid: ["internal mechanics", "overclaiming capability", "unnecessary ownership checks"],
     };
   }
 
-  private selectRoute(bundle: IdentityBundle, routes: Record<string, Record<string, unknown>>, input: PrepareInboundInput): string {
+  private selectRoute(
+    bundle: IdentityBundle,
+    routes: Record<string, Record<string, unknown>>,
+    input: PrepareInboundInput,
+    access: Record<string, unknown>
+  ): string {
     const available = new Set(Object.keys(routes));
-    if (this.hasRisk(input.message) && available.has("human_review")) return "human_review";
-    if (!input.owner_verified && this.hasOwnerSetupIntent(input.message) && available.has("clarify_intent")) return "clarify_intent";
-    if (input.owner_verified && this.hasOwnerSetupIntent(input.message) && available.has("owner_onboarding")) return "owner_onboarding";
+    const ownerVerified = this.effectiveOwnerVerified(input, access);
+    const lifecycleMode = String(bundle.lifecycle.current_mode ?? "unknown");
+    if (input.risk_detected && available.has("human_review")) return "human_review";
     if (this.isLowInformation(input.message) && available.has("clarify_intent")) return "clarify_intent";
+    if (lifecycleMode.includes("seed") && ownerVerified && available.has("owner_onboarding")) return "owner_onboarding";
+    if (lifecycleMode.includes("seed") && !ownerVerified && available.has("clarify_intent")) return "clarify_intent";
     for (const preferred of ["intake", "support", "customer_support", "sales", "owner_onboarding", "clarify_intent", "stop"]) {
       if (available.has(preferred)) return preferred;
     }
     return Object.keys(routes)[0] ?? (this.firstActiveAgent(bundle) ? "direct_agent" : "stop");
   }
 
-  private routeReason(route: string, input: PrepareInboundInput): string {
+  private routeReason(route: string, input: PrepareInboundInput, access: Record<string, unknown>): string {
     if (route === "human_review") return "Inbound appears to involve authority, risk, or external-effect boundaries.";
     if (route === "clarify_intent") return "Inbound can be handled with safe clarification before any authority boundary.";
-    if (route === "owner_onboarding") return input.owner_verified ? "Verified owner setup/onboarding route is available." : "Seed-safe owner orientation route is available.";
+    if (route === "owner_onboarding")
+      return this.effectiveOwnerVerified(input, access)
+        ? "Verified owner setup/onboarding route is available."
+        : "Seed-safe owner orientation route is available.";
     return "Selected from active identity routes.";
   }
 
   private isLowInformation(message: string | undefined): boolean {
     const value = (message ?? "").trim();
     if (!value) return true;
-    return value.split(/\s+/).length <= 4 && !this.hasRisk(value) && !this.hasOwnerSetupIntent(value);
-  }
-
-  private hasRisk(message: string | undefined): boolean {
-    const value = (message ?? "").toLowerCase();
-    return RISK_PATTERNS.some((pattern) => value.includes(pattern));
-  }
-
-  private hasOwnerSetupIntent(message: string | undefined): boolean {
-    const value = (message ?? "").toLowerCase();
-    return OWNER_SETUP_PATTERNS.some((pattern) => value.includes(pattern));
+    return value.split(/\s+/).length <= 4;
   }
 
   private compactMessage(message: string | undefined): string {
@@ -283,5 +325,9 @@ export class InboundService {
                 ? "Credential can inspect identity state but should not write or take authority-bearing actions."
                 : "Public or unknown access: expose only public-safe behavior.",
     };
+  }
+
+  private effectiveOwnerVerified(input: PrepareInboundInput, access: Record<string, unknown>): boolean {
+    return Boolean(input.owner_verified) || access.owner_verified_by_credential === true;
   }
 }

@@ -92,12 +92,22 @@ describe("SemFS service", () => {
     expect(((packet.response_rules as Record<string, unknown>).posture as Record<string, unknown>).name).toBe("seed_warm_clarification");
     expect(JSON.stringify(packet)).not.toContain("baseline_internal_tools");
     expect(JSON.stringify(packet)).toContain("Runtime User-Facing Guard");
+
+    const profileRequest = await container.inbound.prepare(container.registry.resolve("test-identity"), {
+      message: "I want you to become me",
+      owner_verified: false,
+    });
+    expect((profileRequest.selected as Record<string, unknown>).route).toBe("clarify_intent");
+    expect(((profileRequest.response_rules as Record<string, unknown>).posture as Record<string, unknown>).name).toBe(
+      "seed_unverified_or_readonly_intake"
+    );
   });
 
   it("serves compact inbound prep over REST", async () => {
     const root = await tempIdentityRoot();
     process.env.SEMFS_IDENTITY_PATH = root;
     process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "owner-runtime-token";
     const container = createContainer();
     await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
     const app = await createApp(container);
@@ -113,6 +123,32 @@ describe("SemFS service", () => {
     expect(inbound.json().selected.route).toBe("clarify_intent");
     expect(inbound.json().access.token_class).toBe("runtime");
     expect(inbound.json().response_rules.posture.owner_verification).toBe("not_required_for_greeting_or_safe_clarification");
+
+    const runtimeIdentityShapingInbound = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/inbound/prepare",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: { message: "I want you to become me" },
+    });
+
+    expect(runtimeIdentityShapingInbound.statusCode).toBe(200);
+    expect(runtimeIdentityShapingInbound.json().access.token_class).toBe("runtime");
+    expect(runtimeIdentityShapingInbound.json().inbound.owner_verified).toBe(false);
+    expect(runtimeIdentityShapingInbound.json().response_rules.posture.name).toBe("seed_expected_runtime_intake");
+    expect(JSON.stringify(runtimeIdentityShapingInbound.json().response_rules.posture)).toContain("draft profile");
+
+    const ownerInbound = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/inbound/prepare",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: { message: "I want you to become me" },
+    });
+
+    expect(ownerInbound.statusCode).toBe(200);
+    expect(ownerInbound.json().access.token_class).toBe("owner_runtime");
+    expect(ownerInbound.json().inbound.owner_verified).toBe(true);
+    expect(ownerInbound.json().selected.route).toBe("owner_onboarding");
+    expect(ownerInbound.json().response_rules.posture.name).toBe("seed_verified_owner_intake");
   });
 
   it("prepares dream packets and rejects activation-like findings", async () => {
