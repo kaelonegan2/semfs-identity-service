@@ -171,5 +171,72 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
+  if (has("memory:write")) server.tool(
+    "semfs_vector_upsert",
+    "Write a policy-checked SemFS vector summary to an allowed namespace.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      namespace: z.string(),
+      summary: z.string(),
+      record_id: z.string().optional(),
+      content_ref: z.string().optional(),
+      privacy_class: z.string().optional(),
+      source_agent: z.string().optional(),
+      retrieval_tags: z.array(z.string()).optional(),
+      source_path: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { bundle } = await load(identity_id);
+      return text(await container.vectors.upsert(bundle, rest));
+    }
+  );
+
+  if (has("artifact:safe_write")) server.tool(
+    "semfs_write_safe_artifact",
+    "Write a safe SemFS artifact to an allowlisted path. This cannot write lifecycle, registry, dispatch, security, credential, or payment paths.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      path: z.string(),
+      content: z.string(),
+      message: z.string().optional(),
+    },
+    async ({ identity_id, path, content, message }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.writer.writeSafe(mount, path, content, message));
+    }
+  );
+
+  if (has("review:write")) server.tool(
+    "semfs_create_review_packet",
+    "Create a safe human/owner review packet artifact.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      conversation_id: z.string().optional(),
+      summary: z.string().optional(),
+      decision_needed: z.string().optional(),
+      safe_default: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.writer.createReviewPacket(mount, rest));
+    }
+  );
+
+  if (has("approval:write")) server.tool(
+    "semfs_capture_approval",
+    "Capture an owner or reviewer approval result without activating capabilities.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      decision_id: z.string().optional(),
+      approval_status: z.string().optional(),
+      reviewer: z.string().optional(),
+      summary: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.writer.captureApproval(mount, rest));
+    }
+  );
+
   return server;
 }

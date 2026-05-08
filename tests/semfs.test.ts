@@ -134,6 +134,7 @@ describe("SemFS service", () => {
     expect(ownerStatus.json().auth.token_class).toBe("owner_runtime");
     expect(ownerStatus.json().auth.owner_verified_by_credential).toBe(true);
     expect(ownerStatus.json().recommended_next.tool).toBe("semfs_prepare_inbound");
+    expect(ownerStatus.json().can_answer_inbound_from_status).toBe(false);
     expect(ownerStatus.json().runtime_instruction).toContain("Do not ask for separate owner verification");
 
     const runtimeIdentityShapingInbound = await app.inject({
@@ -161,6 +162,7 @@ describe("SemFS service", () => {
     expect(ownerInbound.json().inbound.owner_verified).toBe(true);
     expect(ownerInbound.json().selected.route).toBe("owner_onboarding");
     expect(ownerInbound.json().response_rules.posture.name).toBe("seed_verified_owner_intake");
+    expect(ownerInbound.json().response_rules.action_guidance.owner_input_capture.preferred_tools).toContain("semfs_write_safe_artifact");
   });
 
   it("prepares dream packets and rejects activation-like findings", async () => {

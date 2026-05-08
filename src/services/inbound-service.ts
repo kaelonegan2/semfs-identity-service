@@ -89,6 +89,7 @@ export class InboundService {
       response_rules: {
         user_facing: true,
         posture: this.responsePosture(bundle, input, access),
+        action_guidance: this.actionGuidance(bundle, access),
         do_not_expose: [
           "internal routes",
           "decision.routing.next",
@@ -229,6 +230,44 @@ export class InboundService {
       ask: "Ask the next question implied by the identity route and current request.",
       avoid: ["internal mechanics", "overclaiming capability", "unnecessary ownership checks"],
     };
+  }
+
+  private actionGuidance(bundle: IdentityBundle, access: Record<string, unknown>): Record<string, unknown> {
+    const lifecycleMode = String(bundle.lifecycle.current_mode ?? "unknown");
+    const tokenClass = String(access.token_class);
+    const ownerVerified = access.owner_verified_by_credential === true;
+
+    if (lifecycleMode.includes("seed") && ownerVerified) {
+      return {
+        owner_input_capture: {
+          applies_when:
+            "The owner provides identity-shaping context, profile direction, voice/tone guidance, authority boundaries, or maturation preferences.",
+          expectation:
+            "Do not only reply. Capture the useful owner-provided context through safe SemFS write or memory tools when they are available.",
+          preferred_tools: ["semfs_write_safe_artifact", "semfs_vector_upsert"],
+          safe_artifact_target:
+            "conversations/{conversation_id_or_generated_id}/current-status.md for conversation-scoped setup notes or review summaries.",
+          vector_namespace: "owner-onboarding-summaries",
+          constraints: [
+            "Keep profile changes draft/reviewable until the identity approval path records them.",
+            "Do not write lifecycle, registry, dispatch, security, credential, or payment changes.",
+            "Do not activate capabilities or external actions.",
+          ],
+        },
+      };
+    }
+
+    if (lifecycleMode.includes("seed") && tokenClass === "runtime") {
+      return {
+        runtime_context_capture: {
+          applies_when: "The expected runtime receives useful exploratory identity direction but is not owner-authorized.",
+          expectation: "Clarify and explore. Do not write authoritative profile or identity memory unless runtime policy explicitly permits it.",
+          preferred_tools: ["semfs_create_review_packet"],
+        },
+      };
+    }
+
+    return {};
   }
 
   private selectRoute(

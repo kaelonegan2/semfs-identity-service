@@ -120,7 +120,8 @@ export class AuthService {
         args: { identity_id: status.identity_id },
       };
       response.runtime_instruction =
-        "For inbound handling, call semfs_prepare_inbound next. Treat owner_runtime credentials as owner-authorized runtime context. Do not ask for separate owner verification unless a specific policy or approval step requires it.";
+        "For inbound handling, call semfs_prepare_inbound next before responding. Do not answer a human or external inbound from status alone. Treat owner_runtime credentials as owner-authorized runtime context. Do not ask for separate owner verification unless a specific policy or approval step requires it.";
+      response.can_answer_inbound_from_status = false;
     }
     return response;
   }

@@ -243,6 +243,10 @@ Core tools:
 - `semfs_validate_dream`
 - `semfs_write_safe_dream_outputs`
 - `semfs_vector_search`
+- `semfs_vector_upsert`
+- `semfs_write_safe_artifact`
+- `semfs_create_review_packet`
+- `semfs_capture_approval`
 
 See [docs/mcp.md](docs/mcp.md).
 
