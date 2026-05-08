@@ -117,6 +117,7 @@ export class InboundService {
     const riskDetected = Boolean(input.risk_detected);
     const tokenClass = String(access.token_class);
     const ownerVerified = this.effectiveOwnerVerified(input, access);
+    const ownerSeedProfileCaptured = this.hasOwnerSeedProfile(bundle);
 
     if (tokenClass === "public") {
       return {
@@ -140,6 +141,30 @@ export class InboundService {
       };
     }
 
+    if (lifecycleMode.includes("seed") && tokenClass === "runtime" && !ownerVerified && ownerSeedProfileCaptured) {
+      return {
+        name: "seed_profile_captured_runtime_intake",
+        style: "current_identity_runtime_intake",
+        owner_verification: "runtime_is_expected_but_not_owner_authority",
+        user_goal:
+          "Respond as the current owner-seeded identity. Offer safe runtime help without inviting the sender to reshape canonical identity state.",
+        ask: "Ask what they want to work on using the current identity.",
+        safe_options: [
+          "draft or revise text in the current identity's voice",
+          "summarize, plan, or reason through a question",
+          "prepare exploratory notes that do not change canonical identity state",
+        ],
+        mention_boundary:
+          "Profile changes, external sends, publishing, credentials, payments, capability activation, and lifecycle changes require owner approval.",
+        avoid: [
+          "inviting non-owner identity shaping",
+          "accepting profile or voice changes as authoritative",
+          "claiming mature external-facing capabilities are active",
+          "asking technical setup questions",
+        ],
+      };
+    }
+
     if (lifecycleMode.includes("seed") && lowInformation && !this.isIdentityShaping(input) && !(ownerVerified && this.isApprovalContinuation(input))) {
       return {
         name: "seed_warm_clarification",
@@ -147,11 +172,17 @@ export class InboundService {
         owner_verification: "not_required_for_greeting_or_safe_clarification",
         user_goal: "Help the user choose a safe next step without making ownership the first requirement.",
         ask: "What would you like help with first?",
-        safe_options: [
-          "tell me what this identity should become",
-          "ask what I can do right now",
-          "give me a simple task or question",
-        ],
+        safe_options: ownerVerified
+          ? [
+              "tell me what this identity should become",
+              "ask what I can do right now",
+              "give me a simple task or question",
+            ]
+          : [
+              "ask what I can do right now",
+              "give me a simple task or question",
+              "explore non-authoritative context for owner review",
+            ],
         mention_boundary: "Keep it light: say that changes, sends, payments, publishing, or setup approvals require verification only if relevant.",
         avoid: ["asking owner status first", "technical setup details", "internal route names", "structured contract-style output"],
       };
@@ -360,6 +391,12 @@ export class InboundService {
   private statusIdentityField(bundle: IdentityBundle, key: string): unknown {
     const identity = bundle.status?.identity;
     return identity && typeof identity === "object" ? (identity as Record<string, unknown>)[key] : undefined;
+  }
+
+  private hasOwnerSeedProfile(bundle: IdentityBundle): boolean {
+    const profileDepth = String(bundle.profile?.current_context_depth ?? "");
+    const statusDepth = String(this.statusIdentityField(bundle, "context_depth") ?? "");
+    return profileDepth === "owner_seed_profile_captured" || statusDepth === "owner_seed_profile_captured";
   }
 
   private withRuntimeUserFacingGuard(prompt: string | null): string {

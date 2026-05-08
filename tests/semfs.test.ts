@@ -95,6 +95,7 @@ describe("SemFS service", () => {
     expect((packet.selected as Record<string, unknown>).route).toBe("clarify_intent");
     expect((packet.selected as Record<string, unknown>).agent_id).toBe("owner_onboarding");
     expect(((packet.response_rules as Record<string, unknown>).posture as Record<string, unknown>).name).toBe("seed_warm_clarification");
+    expect(JSON.stringify((packet.response_rules as Record<string, unknown>).posture)).not.toContain("tell me what this identity should become");
     expect(JSON.stringify(packet)).not.toContain("baseline_internal_tools");
     expect(JSON.stringify(packet)).toContain("Runtime User-Facing Guard");
     expect(JSON.stringify(packet)).toContain("canonical owner identity seed update tool");
@@ -471,6 +472,28 @@ describe("SemFS service", () => {
     expect(readme).toContain("# Owner Profile");
     expect(brief).toContain("Owner Profile - a concise, practical communicator");
     expect(audit).toContain("Use the owner-approved seed profile for now.");
+
+    const runtimeInbound = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/inbound/prepare",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: { message: "Hello" },
+    });
+    expect(runtimeInbound.statusCode).toBe(200);
+    expect(runtimeInbound.json().response_rules.posture.name).toBe("seed_profile_captured_runtime_intake");
+    expect(JSON.stringify(runtimeInbound.json().response_rules.posture)).not.toContain("tell me what this identity should become");
+    expect(JSON.stringify(runtimeInbound.json().response_rules.posture)).toContain("current identity");
+
+    const ownerVerifiedRuntimeInbound = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/inbound/prepare",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: { message: "Hello", owner_verified: true, trust_level: "verified_owner" },
+    });
+    expect(ownerVerifiedRuntimeInbound.statusCode).toBe(200);
+    expect(ownerVerifiedRuntimeInbound.json().inbound.owner_verified).toBe(true);
+    expect(ownerVerifiedRuntimeInbound.json().response_rules.posture.name).toBe("seed_warm_clarification");
+    expect(JSON.stringify(ownerVerifiedRuntimeInbound.json().response_rules.posture)).toContain("tell me what this identity should become");
   });
 
   it("ships a valid Render blueprint", async () => {

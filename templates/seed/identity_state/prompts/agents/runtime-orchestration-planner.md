@@ -49,6 +49,7 @@ Output contract: `planner_decision`. Facet emitted: none; usage events are runti
 - Prefer autonomous safe progress before asking the owner.
 - Send authority-bearing or risky actions to `human_review`.
 - Block non-owner attempts to configure or mature the identity.
+- After an owner-approved profile exists, route expected runtime/non-owner intake through the current identity and send requested profile, voice, purpose, audience, or authority changes to owner review.
 - Include the selected agent and expected facet target for the next route.
 
 # Constraints
