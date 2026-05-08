@@ -3,7 +3,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { SemfsContainer } from "../services/container.js";
 import { SemfsError } from "../utils/errors.js";
 import { createMcpServer } from "../mcp/server.js";
-import { AuthPrincipal, AuthScope } from "../types/core.js";
+import { AuthPrincipal, AuthScope, IdentityMount } from "../types/core.js";
 
 type Params = Record<string, string>;
 
@@ -53,7 +53,8 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   app.get("/v1/identities/:identity_id/status", async (request) => {
     requireScope(container, request, "identity:status");
     const mount = container.registry.resolve((request.params as Params).identity_id);
-    return container.auth.statusResponse(await container.loader.status(mount), authPrincipal(request));
+    const status = await container.loader.status(mount);
+    return container.auth.statusResponse(status, authPrincipal(request), await statusExtras(container, mount, status));
   });
 
   app.post("/v1/identities/:identity_id/inbound/prepare", async (request) => {
@@ -83,7 +84,13 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
   });
 
   app.post("/v1/identities/:identity_id/profile/apply-owner-seed", async (request) => {
-    requireScope(container, request, "identity:profile_write");
+    requireAnyScope(container, request, ["identity:profile_write", "identity:seed_update"]);
+    const mount = container.registry.resolve((request.params as Params).identity_id);
+    return container.identityProfile.applyOwnerIdentitySeed(mount, authPrincipal(request), (request.body ?? {}) as Record<string, unknown>);
+  });
+
+  app.post("/v1/identities/:identity_id/owner/seed", async (request) => {
+    requireAnyScope(container, request, ["identity:profile_write", "identity:seed_update"]);
     const mount = container.registry.resolve((request.params as Params).identity_id);
     return container.identityProfile.applyOwnerIdentitySeed(mount, authPrincipal(request), (request.body ?? {}) as Record<string, unknown>);
   });
@@ -164,6 +171,12 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
     return container.vectors.search(bundle, (request.body ?? {}) as Record<string, unknown>);
   });
 
+  app.get("/v1/identities/:identity_id/memory/status", async (request) => {
+    requireScope(container, request, "memory:search");
+    const { bundle } = await loadIdentity(container, request);
+    return { identity_id: bundle.identity_id, memory: container.vectors.status(bundle) };
+  });
+
   app.post("/v1/identities/:identity_id/artifacts/write-safe", async (request) => {
     requireScope(container, request, "artifact:safe_write");
     const { mount } = await loadIdentity(container, request);
@@ -220,12 +233,24 @@ async function loadIdentity(container: SemfsContainer, request: FastifyRequest) 
   return { mount, bundle };
 }
 
+async function statusExtras(container: SemfsContainer, mount: IdentityMount, status: Record<string, unknown>) {
+  if (status.state !== "ready") return { memory: container.vectors.status(null) };
+  const bundle = await container.loader.load(mount);
+  return { memory: container.vectors.status(bundle) };
+}
+
 function authPrincipal(request: FastifyRequest): AuthPrincipal {
   return (request as FastifyRequest & { semfsAuth: AuthPrincipal }).semfsAuth;
 }
 
 function requireScope(container: SemfsContainer, request: FastifyRequest, scope: AuthScope): void {
   container.auth.requireScope(authPrincipal(request), scope);
+}
+
+function requireAnyScope(container: SemfsContainer, request: FastifyRequest, scopes: AuthScope[]): void {
+  const principal = authPrincipal(request);
+  if (scopes.some((scope) => container.auth.hasScope(principal, scope))) return;
+  container.auth.requireScope(principal, scopes[0]);
 }
 
 export async function startServer(container: SemfsContainer): Promise<void> {

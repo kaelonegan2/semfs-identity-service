@@ -38,6 +38,8 @@ services:
         sync: false
       - key: SEMFS_VECTOR_STORE
         value: memory
+      - key: SEMFS_VECTOR_FILE_DIR
+        value: /tmp/semfs-memory
       - key: SEMFS_EMBEDDINGS_BASE_URL
         value: https://api.openai.com/v1
       - key: SEMFS_EMBEDDINGS_MODEL

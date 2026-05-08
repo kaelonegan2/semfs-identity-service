@@ -5,6 +5,7 @@ export type BackendKind = "local" | "github";
 export type AuthScope =
   | "identity:status"
   | "identity:initialize"
+  | "identity:seed_update"
   | "identity:read"
   | "identity:profile_write"
   | "inbound:prepare"
@@ -65,6 +66,7 @@ export interface SemfsConfig {
   githubRef?: string;
   githubToken?: string;
   vectorStore: "memory" | "null";
+  vectorFileDir?: string;
   embeddings?: {
     baseUrl: string;
     apiKey: string;

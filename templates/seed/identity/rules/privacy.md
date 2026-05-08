@@ -18,6 +18,8 @@ Safe repo content:
 
 Sensitive or high-volume context should live behind runtime-governed SemFS/vector references and be retrieved only as allowed summaries.
 
+When local durable vector memory is enabled, those summaries live outside tracked repo files under `.memory/`. Do not commit `.memory/`.
+
 Example pattern:
 
 `semfs://vector/solo-identity-seed/{namespace}/{record_id}`

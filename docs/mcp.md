@@ -17,11 +17,15 @@ Use the HTTP endpoint for hosted deployments such as Render.
 
 MCP tools are exposed according to the credential used to connect. For example, a runtime token can read identity state and prepare actions, while an admin token can also initialize an identity.
 
+For stdio MCP, SemFS selects a configured credential in this order: `SEMFS_MCP_AUTH_TOKEN` when set, then owner runtime, runtime, then `SEMFS_AUTH_TOKEN`. It does not invent admin authority for stdio sessions.
+
 Important tools:
 
 - `semfs_initialize_identity`
 - `semfs_get_identity_status`
+- `semfs_apply_owner_identity_seed`
 - `semfs_prepare_inbound`
+- `semfs_get_memory_status`
 - `semfs_get_manifest`
 - `semfs_apply_owner_identity_seed`
 - `semfs_get_agent`

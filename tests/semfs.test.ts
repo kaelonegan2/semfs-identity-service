@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { parse } from "yaml";
 import { beforeEach, describe, expect, it } from "vitest";
+import { selectMcpPrincipal } from "../src/mcp/principal.js";
 import { createContainer } from "../src/services/container.js";
 import { createApp } from "../src/server/app.js";
 import { SeedTemplateService } from "../src/services/seed-template-service.js";
@@ -22,6 +23,8 @@ describe("SemFS service", () => {
     delete process.env.SEMFS_PUBLIC_AUTH_TOKEN;
     delete process.env.SEMFS_PUBLIC_ACCESS;
     delete process.env.SEMFS_AUTH_TOKENS;
+    delete process.env.SEMFS_MCP_AUTH_TOKEN;
+    delete process.env.SEMFS_VECTOR_FILE_DIR;
     process.env.SEMFS_DEFAULT_IDENTITY_ID = "test-identity";
     process.env.SEMFS_IDENTITY_BACKEND = "local";
     process.env.SEMFS_VECTOR_STORE = "memory";
@@ -97,7 +100,8 @@ describe("SemFS service", () => {
     expect(JSON.stringify(packet)).toContain("canonical owner identity seed update tool");
 
     const profileRequest = await container.inbound.prepare(container.registry.resolve("test-identity"), {
-      message: "I want you to become me",
+      message: "Owner profile setup request",
+      intent: "identity_profile_update",
       owner_verified: false,
     });
     expect((profileRequest.selected as Record<string, unknown>).route).toBe("clarify_intent");
@@ -144,7 +148,7 @@ describe("SemFS service", () => {
       method: "POST",
       url: "/v1/identities/test-identity/inbound/prepare",
       headers: { authorization: "Bearer runtime-token" },
-      payload: { message: "I want you to become me" },
+      payload: { message: "Owner profile setup request", intent: "identity_profile_update" },
     });
 
     expect(runtimeIdentityShapingInbound.statusCode).toBe(200);
@@ -157,7 +161,7 @@ describe("SemFS service", () => {
       method: "POST",
       url: "/v1/identities/test-identity/inbound/prepare",
       headers: { authorization: "Bearer owner-runtime-token" },
-      payload: { message: "I want you to become me" },
+      payload: { message: "Owner profile setup request", intent: "identity_profile_update" },
     });
 
     expect(ownerInbound.statusCode).toBe(200);
@@ -165,7 +169,16 @@ describe("SemFS service", () => {
     expect(ownerInbound.json().inbound.owner_verified).toBe(true);
     expect(ownerInbound.json().selected.route).toBe("owner_onboarding");
     expect(ownerInbound.json().response_rules.posture.name).toBe("seed_verified_owner_intake");
-    expect(ownerInbound.json().response_rules.action_guidance.owner_input_capture.preferred_tools).toContain("semfs_write_safe_artifact");
+    expect(ownerInbound.json().response_rules.action_guidance.owner_input_capture.preferred_tools).toContain("semfs_apply_owner_identity_seed");
+
+    const ownerApprovalContinuation = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/inbound/prepare",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: { message: "Decision response", decision: "accept", conversation_id: "profile-setup" },
+    });
+    expect(ownerApprovalContinuation.statusCode).toBe(200);
+    expect(ownerApprovalContinuation.json().selected.route).toBe("owner_onboarding");
   });
 
   it("prepares dream packets and rejects activation-like findings", async () => {
@@ -206,7 +219,9 @@ describe("SemFS service", () => {
     });
     expect(status.statusCode).toBe(200);
     expect(status.json().state).toBe("ready");
+    expect(status.json().auth.token_class).toBe("runtime");
     expect(status.json().recommended_next.tool).toBe("semfs_prepare_inbound");
+    expect(status.json().memory.durable).toBe(true);
 
     const manifest = await app.inject({
       method: "GET",
@@ -227,6 +242,7 @@ describe("SemFS service", () => {
   it("enforces token-derived REST scopes", async () => {
     const root = await tempIdentityRoot();
     process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_ADMIN_AUTH_TOKEN = "admin-token";
     process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
     const container = createContainer();
     await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
@@ -251,21 +267,122 @@ describe("SemFS service", () => {
     const adminInit = await app.inject({
       method: "POST",
       url: "/v1/identities/initialize",
-      headers: { authorization: "Bearer test-token" },
+      headers: { authorization: "Bearer admin-token" },
       payload: { identity_id: "test-identity" },
     });
     expect(adminInit.statusCode).toBe(409);
+
+    const defaultTokenInit = await app.inject({
+      method: "POST",
+      url: "/v1/identities/initialize",
+      headers: { authorization: "Bearer test-token" },
+      payload: { identity_id: "test-identity" },
+    });
+    expect(defaultTokenInit.statusCode).toBe(403);
   });
 
-  it("prefers explicit owner runtime tokens over the legacy admin token when values overlap", () => {
-    process.env.SEMFS_AUTH_TOKEN = "shared-token";
-    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "shared-token";
+  it("rejects duplicate auth tokens and selects scoped MCP principals", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "owner-runtime-token";
     const container = createContainer();
 
-    const principal = container.auth.authenticate("Bearer shared-token");
+    expect(selectMcpPrincipal(container).tokenClass).toBe("owner_runtime");
+    expect(selectMcpPrincipal(container, "runtime-token").tokenClass).toBe("runtime");
 
-    expect(principal?.tokenClass).toBe("owner_runtime");
-    expect(container.auth.context(principal!).owner_verified_by_credential).toBe(true);
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "test-token";
+    expect(() => createContainer()).toThrow(/Duplicate SemFS auth token/);
+  });
+
+  it("applies owner-approved identity seed updates through owner runtime only", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "owner-runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const app = await createApp(container);
+
+    const denied = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/owner/seed",
+      headers: { authorization: "Bearer test-token" },
+      payload: { display_name: "Owner Profile" },
+    });
+    expect(denied.statusCode).toBe(403);
+
+    const applied = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/owner/seed",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: {
+        display_name: "Owner Profile",
+        profile_summary: "Owner-approved operating profile summary.",
+        primary_purpose: "Represent the owner-approved operating identity and mature into a safe identity operating system.",
+        business_or_function_domain: "owner-approved operating domain",
+        audience_or_market: "owner-approved audience",
+        tone: ["plain-spoken", "operator-like", "practical"],
+        owner_approved_facts: ["Owner-approved fact one", "Owner-approved fact two"],
+        boundaries: ["Do not send externally or publish without explicit approval"],
+        conversation_id: "profile-setup",
+      },
+    });
+    expect(applied.statusCode).toBe(200);
+    expect(applied.json().ok).toBe(true);
+
+    const profile = JSON.parse(await fs.readFile(path.join(root, "identity_state/profile/current.json"), "utf8"));
+    expect(profile.display_name).toBe("Owner Profile");
+    expect(profile.current_context_depth).toBe("owner_seed_profile_captured");
+    expect(await fs.readFile(path.join(root, "README.md"), "utf8")).toContain("Owner Profile");
+    expect(await fs.readFile(path.join(root, "conversations/profile-setup/artifacts/owner-identity-seed-update.md"), "utf8")).toContain("Owner Identity Seed Update");
+  });
+
+  it("stores memory durably under .memory and reports memory status", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    let container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    let mount = container.registry.resolve("test-identity");
+    let bundle = await container.loader.load(mount);
+
+    const upsert = await container.vectors.upsert(bundle, {
+      namespace: "identity-profile-history",
+      summary: "Owner profile summary for durable memory.",
+      source_agent: "context_collector",
+    });
+    expect(upsert.durable).toBe(true);
+    expect(await fs.readFile(path.join(root, ".memory/vector/test-identity/identity-profile-history.jsonl"), "utf8")).toContain("Owner profile");
+
+    container = createContainer();
+    mount = container.registry.resolve("test-identity");
+    bundle = await container.loader.load(mount);
+    const search = await container.vectors.search(bundle, { namespace: "identity-profile-history", query: "Owner profile" });
+    expect((search.records as unknown[]).length).toBe(1);
+    expect(container.vectors.status(bundle).durable).toBe(true);
+
+    const app = await createApp(container);
+    const memoryStatus = await app.inject({
+      method: "GET",
+      url: "/v1/identities/test-identity/memory/status",
+      headers: { authorization: "Bearer test-token" },
+    });
+    expect(memoryStatus.statusCode).toBe(200);
+    expect(memoryStatus.json().memory.storage.location).toBe("identity_repo_dot_memory");
+
+    const gitignore = await fs.readFile(path.join(root, ".gitignore"), "utf8");
+    expect(gitignore).toContain(".memory/");
+  });
+
+  it("requires an explicit memory file dir for non-local identity backends", () => {
+    process.env.SEMFS_IDENTITY_BACKEND = "github";
+    delete process.env.SEMFS_VECTOR_FILE_DIR;
+    expect(() => createContainer()).toThrow(/SEMFS_VECTOR_FILE_DIR is required/);
+  });
+
+  it("rejects overlapping token values across credential classes", () => {
+    process.env.SEMFS_AUTH_TOKEN = "shared-token";
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "shared-token";
+    expect(() => createContainer()).toThrow(/Duplicate SemFS auth token/);
   });
 
   it("initializes seed templates through bulk store writes when available", async () => {
@@ -315,7 +432,7 @@ describe("SemFS service", () => {
       method: "POST",
       url: "/v1/identities/test-identity/profile/apply-owner-seed",
       headers: { authorization: "Bearer runtime-token" },
-      payload: { display_name: "Kaelon" },
+      payload: { display_name: "Owner Profile" },
     });
     expect(runtimeAttempt.statusCode).toBe(403);
 
@@ -324,36 +441,36 @@ describe("SemFS service", () => {
       url: "/v1/identities/test-identity/profile/apply-owner-seed",
       headers: { authorization: "Bearer owner-runtime-token" },
       payload: {
-        display_name: "Kaelon",
-        represented_entity: "Kaelon",
+        display_name: "Owner Profile",
+        represented_entity: "Owner Profile",
         primary_purpose: "help builders understand tools and make decisions",
-        business_or_function_domain: "AI tools and identity operating systems",
-        audience_or_market: "builders",
-        profile_summary: "Kaelon — a concise, practical communicator who helps builders understand tools and make decisions.",
+        business_or_function_domain: "owner-approved operating domain",
+        audience_or_market: "owner-approved audience",
+        profile_summary: "Owner Profile - a concise, practical communicator who helps builders understand tools and make decisions.",
         voice_summary: "concise, practical, warm, builder-oriented",
         tone: ["concise", "practical", "warm", "builder-oriented"],
-        owner_instruction: "Use the default Kaelon persona for now.",
+        owner_instruction: "Use the owner-approved seed profile for now.",
         conversation_id: "test-conversation",
       },
     });
 
     expect(ownerUpdate.statusCode).toBe(200);
-    expect(ownerUpdate.json().profile.display_name).toBe("Kaelon");
+    expect(ownerUpdate.json().profile.display_name).toBe("Owner Profile");
     expect(ownerUpdate.json().approvals.profile_seed_update_required).toBe(false);
 
     const freshContainer = createContainer();
     const mount = freshContainer.registry.resolve("test-identity");
     const bundle = await freshContainer.loader.load(mount);
-    expect(bundle.profile?.display_name).toBe("Kaelon");
+    expect(bundle.profile?.display_name).toBe("Owner Profile");
     expect(bundle.profile?.current_context_depth).toBe("owner_seed_profile_captured");
-    expect((bundle.status?.identity as Record<string, unknown>).display_name).toBe("Kaelon");
+    expect((bundle.status?.identity as Record<string, unknown>).display_name).toBe("Owner Profile");
 
     const readme = await fs.readFile(path.join(root, "README.md"), "utf8");
     const brief = await fs.readFile(path.join(root, "identity/context/identity-brief.md"), "utf8");
     const audit = await fs.readFile(path.join(root, "conversations/test-conversation/artifacts/owner-identity-seed-update.md"), "utf8");
-    expect(readme).toContain("# Kaelon");
-    expect(brief).toContain("Kaelon — a concise, practical communicator");
-    expect(audit).toContain("Use the default Kaelon persona for now.");
+    expect(readme).toContain("# Owner Profile");
+    expect(brief).toContain("Owner Profile - a concise, practical communicator");
+    expect(audit).toContain("Use the owner-approved seed profile for now.");
   });
 
   it("ships a valid Render blueprint", async () => {

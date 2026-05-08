@@ -9,10 +9,14 @@ function text(value: unknown) {
 
 export function createMcpServer(container: SemfsContainer, principal?: AuthPrincipal): McpServer {
   const server = new McpServer({ name: "semfs", version: "0.1.0" });
-  const activePrincipal = principal ?? { id: "legacy-admin", tokenClass: "admin" as const, scopes: container.config.authPrincipals[0]?.scopes ?? [] };
+  const activePrincipal = principal ?? container.config.authPrincipals[0] ?? { id: "public", tokenClass: "public" as const, scopes: [] };
 
   function has(scope: AuthScope): boolean {
     return container.auth.hasScope(activePrincipal, scope);
+  }
+
+  function hasAny(scopes: AuthScope[]): boolean {
+    return scopes.some((scope) => has(scope));
   }
 
   async function load(identityId: string) {
@@ -39,7 +43,9 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     { identity_id: z.string().default(container.config.defaultIdentityId) },
     async ({ identity_id }) => {
       const mount = container.registry.resolve(identity_id);
-      return text(container.auth.statusResponse(await container.loader.status(mount), activePrincipal));
+      const status = await container.loader.status(mount);
+      const extra = status.state === "ready" ? { memory: container.vectors.status(await container.loader.load(mount)) } : { memory: container.vectors.status(null) };
+      return text(container.auth.statusResponse(status, activePrincipal, extra));
     }
   );
 
@@ -54,6 +60,10 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
       trust_level: z.string().optional(),
       risk_detected: z.boolean().optional(),
       risk_category: z.string().optional(),
+      intent: z.string().optional(),
+      decision: z.string().optional(),
+      context_kind: z.string().optional(),
+      pending_identity_context: z.boolean().optional(),
     },
     async ({ identity_id, ...rest }) => {
       const mount = container.registry.resolve(identity_id);
@@ -71,7 +81,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("identity:profile_write")) server.tool(
+  if (hasAny(["identity:profile_write", "identity:seed_update"])) server.tool(
     "semfs_apply_owner_identity_seed",
     "Apply verified-owner seed identity direction to canonical profile, brief, README, and status surfaces. This does not activate capabilities, external actions, credentials, payments, publishing, or lifecycle changes.",
     {
@@ -175,6 +185,18 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     async ({ identity_id, findings_json }) => {
       const { mount } = await load(identity_id);
       return text(await container.dreams.writeSafe(mount, JSON.parse(findings_json)));
+    }
+  );
+
+  if (has("memory:search")) server.tool(
+    "semfs_get_memory_status",
+    "Inspect SemFS memory backend configuration, durability, namespace policy, and privacy posture.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+    },
+    async ({ identity_id }) => {
+      const { bundle } = await load(identity_id);
+      return text({ identity_id: bundle.identity_id, memory: container.vectors.status(bundle) });
     }
   );
 

@@ -11,6 +11,10 @@ interface PrepareInboundInput {
   trust_level?: string;
   risk_detected?: boolean;
   risk_category?: string;
+  intent?: string;
+  decision?: string;
+  context_kind?: string;
+  pending_identity_context?: boolean;
   auth?: AuthPrincipal;
 }
 
@@ -136,7 +140,7 @@ export class InboundService {
       };
     }
 
-    if (lifecycleMode.includes("seed") && lowInformation) {
+    if (lifecycleMode.includes("seed") && lowInformation && !this.isIdentityShaping(input) && !(ownerVerified && this.isApprovalContinuation(input))) {
       return {
         name: "seed_warm_clarification",
         style: "brief_warm_plain_language",
@@ -248,6 +252,7 @@ export class InboundService {
           expectation:
             "Do not only reply. If the owner approves what the seed identity should be, use the canonical owner identity seed update path before generic artifacts or vector memory.",
           preferred_tools: ["semfs_apply_owner_identity_seed", "semfs_write_safe_artifact", "semfs_vector_upsert"],
+          canonical_seed_update_tool: "semfs_apply_owner_identity_seed",
           canonical_profile_update: {
             applies_when:
               "The verified owner names or approves the identity's represented person, business, project, purpose, voice, or default seed persona.",
@@ -290,6 +295,12 @@ export class InboundService {
     const ownerVerified = this.effectiveOwnerVerified(input, access);
     const lifecycleMode = String(bundle.lifecycle.current_mode ?? "unknown");
     if (input.risk_detected && available.has("human_review")) return "human_review";
+    if (lifecycleMode.includes("seed") && ownerVerified && this.isIdentityShaping(input) && available.has("owner_onboarding")) {
+      return "owner_onboarding";
+    }
+    if (lifecycleMode.includes("seed") && ownerVerified && this.isApprovalContinuation(input) && available.has("owner_onboarding")) {
+      return "owner_onboarding";
+    }
     if (this.isLowInformation(input.message) && available.has("clarify_intent")) return "clarify_intent";
     if (lifecycleMode.includes("seed") && ownerVerified && available.has("owner_onboarding")) return "owner_onboarding";
     if (lifecycleMode.includes("seed") && !ownerVerified && available.has("clarify_intent")) return "clarify_intent";
@@ -313,6 +324,19 @@ export class InboundService {
     const value = (message ?? "").trim();
     if (!value) return true;
     return value.split(/\s+/).length <= 4;
+  }
+
+  private isIdentityShaping(input: PrepareInboundInput): boolean {
+    const intent = String(input.intent ?? "");
+    const contextKind = String(input.context_kind ?? "");
+    return (
+      ["identity_setup", "identity_profile_update", "owner_seed_profile", "voice_profile_update", "purpose_update"].includes(intent) ||
+      ["identity_profile", "owner_profile", "voice_profile", "identity_purpose"].includes(contextKind)
+    );
+  }
+
+  private isApprovalContinuation(input: PrepareInboundInput): boolean {
+    return ["accept", "approve", "confirm"].includes(String(input.decision ?? "")) && (Boolean(input.conversation_id) || input.pending_identity_context === true);
   }
 
   private compactMessage(message: string | undefined): string {

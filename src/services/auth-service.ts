@@ -21,8 +21,6 @@ export const ADMIN_SCOPES: AuthScope[] = [
   "dream:write",
 ];
 
-export const OWNER_RUNTIME_SCOPES: AuthScope[] = [...ADMIN_SCOPES.filter((scope) => scope !== "identity:initialize"), "identity:profile_write"];
-
 export const RUNTIME_SCOPES: AuthScope[] = [
   "identity:status",
   "identity:read",
@@ -40,6 +38,8 @@ export const RUNTIME_SCOPES: AuthScope[] = [
   "dream:validate",
   "dream:write",
 ];
+
+export const OWNER_RUNTIME_SCOPES: AuthScope[] = ["identity:profile_write", "identity:seed_update", ...RUNTIME_SCOPES, "approval:write"];
 
 export const READONLY_SCOPES: AuthScope[] = ["identity:status", "identity:read", "inbound:prepare", "agent:read", "memory:search"];
 
@@ -110,8 +110,8 @@ export class AuthService {
     };
   }
 
-  statusResponse(status: Record<string, unknown>, principal: AuthPrincipal): Record<string, unknown> {
-    const response: Record<string, unknown> = { ...status, auth: this.context(principal) };
+  statusResponse(status: Record<string, unknown>, principal: AuthPrincipal, extra?: Record<string, unknown>): Record<string, unknown> {
+    const response: Record<string, unknown> = { ...status, ...(extra ?? {}), auth: this.context(principal) };
     if (status.state === "ready" && this.hasScope(principal, "inbound:prepare")) {
       response.recommended_next = {
         tool: "semfs_prepare_inbound",

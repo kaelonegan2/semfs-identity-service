@@ -11,6 +11,14 @@ export function loadConfig(): SemfsConfig {
   const embeddingsApiKey = env("SEMFS_EMBEDDINGS_API_KEY");
   const embeddingsBaseUrl = env("SEMFS_EMBEDDINGS_BASE_URL");
   const embeddingsModel = env("SEMFS_EMBEDDINGS_MODEL", "text-embedding-3-small")!;
+  const vectorStore = (env("SEMFS_VECTOR_STORE", "memory") ?? "memory") as "memory" | "null";
+  const vectorFileDir = env("SEMFS_VECTOR_FILE_DIR");
+  if (!["memory", "null"].includes(vectorStore)) {
+    throw new Error("SEMFS_VECTOR_STORE must be memory or null");
+  }
+  if (vectorStore === "memory" && backend !== "local" && !vectorFileDir) {
+    throw new Error("SEMFS_VECTOR_FILE_DIR is required when SEMFS_VECTOR_STORE=memory and SEMFS_IDENTITY_BACKEND is not local");
+  }
 
   return {
     host: env("SEMFS_HOST", "127.0.0.1")!,
@@ -24,7 +32,8 @@ export function loadConfig(): SemfsConfig {
     githubRepo: env("SEMFS_GITHUB_REPO"),
     githubRef: env("SEMFS_GITHUB_REF", "main"),
     githubToken: env("SEMFS_GITHUB_TOKEN"),
-    vectorStore: (env("SEMFS_VECTOR_STORE", "memory") ?? "memory") as "memory" | "null",
+    vectorStore,
+    vectorFileDir,
     embeddings:
       embeddingsApiKey && embeddingsBaseUrl
         ? { apiKey: embeddingsApiKey, baseUrl: embeddingsBaseUrl, model: embeddingsModel }
@@ -33,20 +42,20 @@ export function loadConfig(): SemfsConfig {
 }
 
 function loadAuthPrincipals(legacyAuthToken: string): AuthPrincipal[] {
-  const principals: AuthPrincipal[] = [];
+  const principals: AuthPrincipal[] = [
+    {
+      id: "default-runtime",
+      tokenClass: "runtime",
+      scopes: RUNTIME_SCOPES,
+      token: legacyAuthToken,
+    },
+  ];
 
   addPrincipal(principals, "admin", env("SEMFS_ADMIN_AUTH_TOKEN"), "admin", ADMIN_SCOPES);
   addPrincipal(principals, "owner-runtime", env("SEMFS_OWNER_RUNTIME_AUTH_TOKEN"), "owner_runtime", OWNER_RUNTIME_SCOPES);
   addPrincipal(principals, "runtime", env("SEMFS_RUNTIME_AUTH_TOKEN"), "runtime", RUNTIME_SCOPES);
   addPrincipal(principals, "readonly", env("SEMFS_READONLY_AUTH_TOKEN"), "readonly", READONLY_SCOPES);
   addPrincipal(principals, "public-token", env("SEMFS_PUBLIC_AUTH_TOKEN"), "public", PUBLIC_SCOPES);
-
-  principals.push({
-    id: "legacy-admin",
-    tokenClass: "admin",
-    scopes: ADMIN_SCOPES,
-    token: legacyAuthToken,
-  });
 
   const custom = env("SEMFS_AUTH_TOKENS");
   if (custom) {
@@ -61,6 +70,7 @@ function loadAuthPrincipals(legacyAuthToken: string): AuthPrincipal[] {
     }
   }
 
+  assertUniqueTokens(principals);
   return principals;
 }
 
@@ -73,4 +83,19 @@ function addPrincipal(
 ) {
   if (!token) return;
   principals.push({ id, tokenClass, scopes, token });
+}
+
+function assertUniqueTokens(principals: AuthPrincipal[]) {
+  const seen = new Map<string, AuthPrincipal>();
+  for (const principal of principals) {
+    if (!principal.token) continue;
+    const existing = seen.get(principal.token);
+    if (!existing) {
+      seen.set(principal.token, principal);
+      continue;
+    }
+    throw new Error(
+      `Duplicate SemFS auth token configured for ${existing.id} (${existing.tokenClass}) and ${principal.id} (${principal.tokenClass}). Use distinct token values for each credential class.`
+    );
+  }
 }

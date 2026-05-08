@@ -14,6 +14,7 @@ const REQUIRED_JSON_FILES = [
 export interface IdentityBundle {
   identity_id: string;
   store_label: string;
+  store_kind: string;
   lifecycle: Record<string, unknown>;
   mode_permissions: Record<string, unknown>;
   status: Record<string, unknown> | null;
@@ -92,6 +93,7 @@ export class IdentityLoader {
     return {
       identity_id: identityId,
       store_label: store.label,
+      store_kind: store.kind,
       lifecycle,
       mode_permissions: await readJson(store, "identity_state/lifecycle/mode-permissions.json"),
       status: await this.optionalJson(store, "identity_state/status/current.json"),

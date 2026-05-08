@@ -93,7 +93,7 @@ All endpoints except `/health` require bearer auth:
 Authorization: Bearer $SEMFS_AUTH_TOKEN
 ```
 
-SemFS supports scoped credentials. `SEMFS_AUTH_TOKEN` is kept as a backward-compatible admin token. For hosted runtimes, prefer class-specific tokens:
+SemFS supports scoped credentials. `SEMFS_AUTH_TOKEN` is normal runtime access. Use class-specific tokens for owner or admin authority:
 
 - `SEMFS_ADMIN_AUTH_TOKEN`: initialization and administrative repair.
 - `SEMFS_OWNER_RUNTIME_AUTH_TOKEN`: owner-authorized runtime work without seed replacement.
@@ -116,6 +116,9 @@ SEMFS_DEFAULT_IDENTITY_ID=solo-identity-seed
 SEMFS_IDENTITY_BACKEND=local
 SEMFS_IDENTITY_PATH=./data/identity
 SEMFS_VECTOR_STORE=memory
+# Optional. Defaults to .memory/ inside the local identity root.
+# Required for non-local identity backends when SEMFS_VECTOR_STORE=memory.
+# SEMFS_VECTOR_FILE_DIR=./data/identity/.memory
 ```
 
 GitHub-backed identity configuration:
@@ -198,8 +201,13 @@ Runs:
 
 Memory:
 
+- `GET /v1/identities/:identity_id/memory/status`
 - `POST /v1/identities/:identity_id/vector/upsert`
 - `POST /v1/identities/:identity_id/vector/search`
+
+Owner seed profile:
+
+- `POST /v1/identities/:identity_id/owner/seed`
 
 Safe writes and review:
 
@@ -234,7 +242,9 @@ Core tools:
 
 - `semfs_initialize_identity`
 - `semfs_get_identity_status`
+- `semfs_apply_owner_identity_seed`
 - `semfs_prepare_inbound`
+- `semfs_get_memory_status`
 - `semfs_get_manifest`
 - `semfs_apply_owner_identity_seed`
 - `semfs_get_agent`
