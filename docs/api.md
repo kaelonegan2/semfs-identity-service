@@ -15,6 +15,7 @@ Core endpoints:
 - `POST /v1/identities/:identity_id/inbound/prepare`
 - `GET /v1/identities/:identity_id/manifest`
 - `GET /v1/identities/:identity_id/context`
+- `POST /v1/identities/:identity_id/profile/apply-owner-seed`
 - `GET /v1/identities/:identity_id/agents`
 - `GET /v1/identities/:identity_id/agents/:agent_id`
 - `POST /v1/identities/:identity_id/agents/:agent_id/prepare-action`

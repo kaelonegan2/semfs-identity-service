@@ -2,6 +2,7 @@ import { AuthPrincipal, IdentityMount } from "../types/core.js";
 import { readOptionalText } from "./json.js";
 import { IdentityBundle, IdentityLoader } from "./identity-loader.js";
 import { PolicyService } from "./policy-service.js";
+import { runtimeGuidanceOverlay } from "./agent-service.js";
 
 interface PrepareInboundInput {
   message?: string;
@@ -181,19 +182,20 @@ export class InboundService {
     if (lifecycleMode.includes("seed") && ownerVerified) {
       return {
         name: "seed_verified_owner_intake",
-        style: "warm_plain_language_owner_setup",
+        style: "warm_capable_owner_setup",
         owner_verification: "verified_by_runtime_context_or_credential",
         user_goal:
-          "Handle the current request as owner-authorized seed intake while keeping durable changes draft and approval-aware.",
-        ask: "Ask the smallest useful next question. For identity-shaping requests, ask for purpose, voice, priorities, and boundaries.",
+          "Meet the owner as a collaborator shaping a living identity. Reflect the direction, offer a concrete next move, and keep durable changes draft and approval-aware.",
+        ask:
+          "Ask the smallest useful next question. For identity-shaping requests, offer to build from the owner's words, extract voice from examples, or prepare a research/exploration plan before drafting identity state.",
         safe_options: [
-          "describe the identity purpose",
-          "describe the voice and decision style",
-          "ask what this identity can safely do now",
-          "name boundaries or things it must not do",
+          "shape the identity from the owner's description",
+          "map the public/business context first",
+          "extract voice, judgment, priorities, and boundaries",
+          "draft a reviewable identity brief and first memory notes",
         ],
         mention_boundary:
-          "Keep setup collaborative. Durable profile or capability changes can be drafted now and applied through the identity's approval path.",
+          "Keep setup collaborative and light. Durable profile or capability changes can be drafted now and applied through the identity's approval path.",
         avoid: ["technical setup questions", "claiming mature capability is already active", "external sends", "publishing", "payments"],
       };
     }
@@ -201,15 +203,16 @@ export class InboundService {
     if (lifecycleMode.includes("seed") && !ownerVerified) {
       return {
         name: "seed_unverified_or_readonly_intake",
-        style: "clear_limited_context_collection",
+        style: "warm_exploratory_boundary",
         owner_verification: "required_before_accepting_configuration_or_authority_as_authoritative",
         user_goal:
-          "Handle safe clarification and collect exploratory input only. Do not treat identity-shaping or authority-bearing requests as a draft profile, approved configuration, or accepted identity memory.",
+          "Explore the requested identity direction naturally while keeping one clear boundary: it cannot become authoritative identity state until owner approval is established.",
         ask:
-          "Ask the smallest useful next question. If the request would shape the identity, explain that it can be explored now but needs owner approval before becoming identity state.",
+          "Ask the smallest useful next question. If the request would shape the identity, offer exploration paths such as describing the person/business, mapping audience and work, or preparing a review packet.",
         safe_options: [
-          "clarify what the user wants help with",
           "explore possible identity direction",
+          "prepare questions for the owner",
+          "map what research would be useful",
           "route authority-bearing work to review",
         ],
         avoid: [
@@ -243,8 +246,15 @@ export class InboundService {
           applies_when:
             "The owner provides identity-shaping context, profile direction, voice/tone guidance, authority boundaries, or maturation preferences.",
           expectation:
-            "Do not only reply. Capture the useful owner-provided context through safe SemFS write or memory tools when they are available.",
-          preferred_tools: ["semfs_write_safe_artifact", "semfs_vector_upsert"],
+            "Do not only reply. If the owner approves what the seed identity should be, use the canonical owner identity seed update path before generic artifacts or vector memory.",
+          preferred_tools: ["semfs_apply_owner_identity_seed", "semfs_write_safe_artifact", "semfs_vector_upsert"],
+          canonical_profile_update: {
+            applies_when:
+              "The verified owner names or approves the identity's represented person, business, project, purpose, voice, or default seed persona.",
+            approval_required: false,
+            note:
+              "Owner-runtime approval is enough for canonical seed profile, brief, README, and status updates. This does not activate capabilities, lifecycle changes, credentials, payments, publishing, or external actions.",
+          },
           safe_artifact_target:
             "conversations/{conversation_id_or_generated_id}/current-status.md for conversation-scoped setup notes or review summaries.",
           vector_namespace: "owner-onboarding-summaries",
@@ -330,7 +340,7 @@ export class InboundService {
 
   private withRuntimeUserFacingGuard(prompt: string | null): string {
     if (!prompt) return "not_available";
-    return `${prompt.trim()}\n\n# Runtime User-Facing Guard\n\nUse internal routes, contracts, facets, tool names, and policy fields to decide behavior, but do not print them in the final user-facing response unless the user is clearly asking as an owner/admin for implementation details.`;
+    return `${prompt.trim()}\n\n${runtimeGuidanceOverlay()}`;
   }
 
   private accessPosture(auth: AuthPrincipal | undefined): Record<string, unknown> {

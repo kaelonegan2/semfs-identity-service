@@ -21,7 +21,7 @@ export const ADMIN_SCOPES: AuthScope[] = [
   "dream:write",
 ];
 
-export const OWNER_RUNTIME_SCOPES: AuthScope[] = ADMIN_SCOPES.filter((scope) => scope !== "identity:initialize");
+export const OWNER_RUNTIME_SCOPES: AuthScope[] = [...ADMIN_SCOPES.filter((scope) => scope !== "identity:initialize"), "identity:profile_write"];
 
 export const RUNTIME_SCOPES: AuthScope[] = [
   "identity:status",

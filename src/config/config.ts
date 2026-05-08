@@ -33,20 +33,20 @@ export function loadConfig(): SemfsConfig {
 }
 
 function loadAuthPrincipals(legacyAuthToken: string): AuthPrincipal[] {
-  const principals: AuthPrincipal[] = [
-    {
-      id: "legacy-admin",
-      tokenClass: "admin",
-      scopes: ADMIN_SCOPES,
-      token: legacyAuthToken,
-    },
-  ];
+  const principals: AuthPrincipal[] = [];
 
   addPrincipal(principals, "admin", env("SEMFS_ADMIN_AUTH_TOKEN"), "admin", ADMIN_SCOPES);
   addPrincipal(principals, "owner-runtime", env("SEMFS_OWNER_RUNTIME_AUTH_TOKEN"), "owner_runtime", OWNER_RUNTIME_SCOPES);
   addPrincipal(principals, "runtime", env("SEMFS_RUNTIME_AUTH_TOKEN"), "runtime", RUNTIME_SCOPES);
   addPrincipal(principals, "readonly", env("SEMFS_READONLY_AUTH_TOKEN"), "readonly", READONLY_SCOPES);
   addPrincipal(principals, "public-token", env("SEMFS_PUBLIC_AUTH_TOKEN"), "public", PUBLIC_SCOPES);
+
+  principals.push({
+    id: "legacy-admin",
+    tokenClass: "admin",
+    scopes: ADMIN_SCOPES,
+    token: legacyAuthToken,
+  });
 
   const custom = env("SEMFS_AUTH_TOKENS");
   if (custom) {

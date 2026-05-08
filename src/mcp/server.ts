@@ -71,6 +71,28 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
+  if (has("identity:profile_write")) server.tool(
+    "semfs_apply_owner_identity_seed",
+    "Apply verified-owner seed identity direction to canonical profile, brief, README, and status surfaces. This does not activate capabilities, external actions, credentials, payments, publishing, or lifecycle changes.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      display_name: z.string().optional(),
+      represented_entity: z.string().optional(),
+      primary_purpose: z.string().optional(),
+      business_or_function_domain: z.string().optional(),
+      audience_or_market: z.string().optional(),
+      profile_summary: z.string().optional(),
+      voice_summary: z.string().optional(),
+      owner_instruction: z.string().optional(),
+      tone: z.array(z.string()).optional(),
+      conversation_id: z.string().nullable().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const mount = container.registry.resolve(identity_id);
+      return text(await container.identityProfile.applyOwnerIdentitySeed(mount, activePrincipal, rest));
+    }
+  );
+
   if (has("agent:read")) server.tool(
     "semfs_get_agent",
     "Retrieve an internal identity agent manifest with prompt, tools, policies, contracts, skills, specialists, and memory access.",

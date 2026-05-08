@@ -5,6 +5,8 @@ import { parse } from "yaml";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createContainer } from "../src/services/container.js";
 import { createApp } from "../src/server/app.js";
+import { SeedTemplateService } from "../src/services/seed-template-service.js";
+import { IdentityStore } from "../src/types/core.js";
 
 async function tempIdentityRoot() {
   return fs.mkdtemp(path.join(os.tmpdir(), "semfs-test-"));
@@ -92,6 +94,7 @@ describe("SemFS service", () => {
     expect(((packet.response_rules as Record<string, unknown>).posture as Record<string, unknown>).name).toBe("seed_warm_clarification");
     expect(JSON.stringify(packet)).not.toContain("baseline_internal_tools");
     expect(JSON.stringify(packet)).toContain("Runtime User-Facing Guard");
+    expect(JSON.stringify(packet)).toContain("canonical owner identity seed update tool");
 
     const profileRequest = await container.inbound.prepare(container.registry.resolve("test-identity"), {
       message: "I want you to become me",
@@ -252,6 +255,105 @@ describe("SemFS service", () => {
       payload: { identity_id: "test-identity" },
     });
     expect(adminInit.statusCode).toBe(409);
+  });
+
+  it("prefers explicit owner runtime tokens over the legacy admin token when values overlap", () => {
+    process.env.SEMFS_AUTH_TOKEN = "shared-token";
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "shared-token";
+    const container = createContainer();
+
+    const principal = container.auth.authenticate("Bearer shared-token");
+
+    expect(principal?.tokenClass).toBe("owner_runtime");
+    expect(container.auth.context(principal!).owner_verified_by_credential).toBe(true);
+  });
+
+  it("initializes seed templates through bulk store writes when available", async () => {
+    const writes: Array<{ path: string; content: string }> = [];
+    const store: IdentityStore = {
+      kind: "local",
+      label: "bulk-test-store",
+      readText: async () => "",
+      writeText: async () => {
+        throw new Error("writeText should not be used when writeManyText is available");
+      },
+      writeManyText: async (files) => {
+        writes.push(...files);
+        return files.map((file) => ({ path: file.path, wrote: true }));
+      },
+      exists: async () => false,
+      listFiles: async () => [],
+    };
+    const service = new SeedTemplateService({ createStoreFromTarget: () => store } as never);
+
+    const result = await service.initialize({ identity_id: "bulk-identity", display_name: "Bulk Identity" });
+
+    expect(result.files_written).toBeGreaterThan(100);
+    expect(writes.length).toBe(result.files_written);
+    expect(writes.some((write) => write.path === "identity_state/lifecycle/current.json")).toBe(true);
+    expect(writes.some((write) => write.content.includes("bulk-identity"))).toBe(true);
+  });
+
+  it("keeps seed owner onboarding natural by default", async () => {
+    const prompt = await fs.readFile("templates/seed/identity_state/prompts/agents/owner-onboarding.md", "utf8");
+
+    expect(prompt).toContain("Write naturally");
+    expect(prompt).toContain("identity formation");
+    expect(prompt).not.toContain("Use short sections:");
+  });
+
+  it("applies verified-owner seed identity updates to canonical profile surfaces", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "owner-runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const app = await createApp(container);
+
+    const runtimeAttempt = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/profile/apply-owner-seed",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: { display_name: "Kaelon" },
+    });
+    expect(runtimeAttempt.statusCode).toBe(403);
+
+    const ownerUpdate = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/profile/apply-owner-seed",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: {
+        display_name: "Kaelon",
+        represented_entity: "Kaelon",
+        primary_purpose: "help builders understand tools and make decisions",
+        business_or_function_domain: "AI tools and identity operating systems",
+        audience_or_market: "builders",
+        profile_summary: "Kaelon — a concise, practical communicator who helps builders understand tools and make decisions.",
+        voice_summary: "concise, practical, warm, builder-oriented",
+        tone: ["concise", "practical", "warm", "builder-oriented"],
+        owner_instruction: "Use the default Kaelon persona for now.",
+        conversation_id: "test-conversation",
+      },
+    });
+
+    expect(ownerUpdate.statusCode).toBe(200);
+    expect(ownerUpdate.json().profile.display_name).toBe("Kaelon");
+    expect(ownerUpdate.json().approvals.profile_seed_update_required).toBe(false);
+
+    const freshContainer = createContainer();
+    const mount = freshContainer.registry.resolve("test-identity");
+    const bundle = await freshContainer.loader.load(mount);
+    expect(bundle.profile?.display_name).toBe("Kaelon");
+    expect(bundle.profile?.current_context_depth).toBe("owner_seed_profile_captured");
+    expect((bundle.status?.identity as Record<string, unknown>).display_name).toBe("Kaelon");
+
+    const readme = await fs.readFile(path.join(root, "README.md"), "utf8");
+    const brief = await fs.readFile(path.join(root, "identity/context/identity-brief.md"), "utf8");
+    const audit = await fs.readFile(path.join(root, "conversations/test-conversation/artifacts/owner-identity-seed-update.md"), "utf8");
+    expect(readme).toContain("# Kaelon");
+    expect(brief).toContain("Kaelon — a concise, practical communicator");
+    expect(audit).toContain("Use the default Kaelon persona for now.");
   });
 
   it("ships a valid Render blueprint", async () => {

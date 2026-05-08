@@ -34,6 +34,14 @@ export class LocalIdentityStore implements IdentityStore {
     return { path: normalizeRepoPath(relPath), wrote: true };
   }
 
+  async writeManyText(files: Array<{ path: string; content: string }>): Promise<WriteResult[]> {
+    const writes = [];
+    for (const file of files) {
+      writes.push(await this.writeText(file.path, file.content));
+    }
+    return writes;
+  }
+
   async exists(relPath: string): Promise<boolean> {
     try {
       await fs.access(this.resolve(relPath));

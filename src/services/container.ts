@@ -4,6 +4,7 @@ import { AgentService } from "./agent-service.js";
 import { AuthService } from "./auth-service.js";
 import { DreamService } from "./dream-service.js";
 import { IdentityLoader } from "./identity-loader.js";
+import { IdentityProfileService } from "./identity-profile-service.js";
 import { InboundService } from "./inbound-service.js";
 import { PolicyService } from "./policy-service.js";
 import { SafeWriter } from "./safe-writer.js";
@@ -21,6 +22,7 @@ export function createContainer() {
     auth: new AuthService(config.authPrincipals, config.allowPublicAccess),
     registry,
     loader,
+    identityProfile: new IdentityProfileService(),
     inbound: new InboundService(loader, policy),
     policy,
     writer,

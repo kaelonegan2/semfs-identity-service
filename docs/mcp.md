@@ -23,6 +23,7 @@ Important tools:
 - `semfs_get_identity_status`
 - `semfs_prepare_inbound`
 - `semfs_get_manifest`
+- `semfs_apply_owner_identity_seed`
 - `semfs_get_agent`
 - `semfs_prepare_agent_action`
 - `semfs_authorize_agent_action`

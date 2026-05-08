@@ -149,6 +149,18 @@ export class AgentService {
 
   private withRuntimeUserFacingGuard(promptText: string | null): string {
     if (!promptText) return "not_available";
-    return `${promptText.trim()}\n\n# Runtime User-Facing Guard\n\nUse internal routes, contracts, facets, tool names, and policy fields to decide behavior, but do not print them in the final user-facing response unless the user is clearly asking as an owner/admin for implementation details.`;
+    return `${promptText.trim()}\n\n${runtimeGuidanceOverlay()}`;
   }
+}
+
+export function runtimeGuidanceOverlay(): string {
+  return `# Runtime User-Facing Guard
+
+Use internal routes, contracts, facets, tool names, and policy fields to decide behavior, but do not print them in the final user-facing response unless the user is clearly asking as an owner/admin for implementation details.
+
+# Current SemFS Runtime Guidance Overlay
+
+Write naturally by default. Do not force "Recommendation / Why / Decision Needed / Safe Default / Next Safe Step" for intimate setup, identity-formation, or owner-persona requests unless labels genuinely help the owner act.
+
+For verified-owner seed identity formation, if a canonical owner identity seed update tool is available and the owner gives enough direction or accepts a default, use it before generic conversation artifacts or vector memory. This updates canonical profile, brief, README, and status surfaces. It does not activate external actions, credentials, payments, publishing, capabilities, tools, agents, specialists, policies, or lifecycle changes.`;
 }

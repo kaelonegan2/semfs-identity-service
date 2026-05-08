@@ -82,6 +82,12 @@ export async function createApp(container: SemfsContainer): Promise<FastifyInsta
     };
   });
 
+  app.post("/v1/identities/:identity_id/profile/apply-owner-seed", async (request) => {
+    requireScope(container, request, "identity:profile_write");
+    const mount = container.registry.resolve((request.params as Params).identity_id);
+    return container.identityProfile.applyOwnerIdentitySeed(mount, authPrincipal(request), (request.body ?? {}) as Record<string, unknown>);
+  });
+
   app.get("/v1/identities/:identity_id/agents", async (request) => {
     requireScope(container, request, "agent:read");
     const { bundle } = await loadIdentity(container, request);

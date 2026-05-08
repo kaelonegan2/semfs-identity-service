@@ -179,6 +179,7 @@ Identity:
 - `POST /v1/identities/:identity_id/inbound/prepare`
 - `GET /v1/identities/:identity_id/manifest`
 - `GET /v1/identities/:identity_id/context`
+- `POST /v1/identities/:identity_id/profile/apply-owner-seed`
 
 Agents:
 
@@ -235,6 +236,7 @@ Core tools:
 - `semfs_get_identity_status`
 - `semfs_prepare_inbound`
 - `semfs_get_manifest`
+- `semfs_apply_owner_identity_seed`
 - `semfs_get_agent`
 - `semfs_prepare_agent_action`
 - `semfs_authorize_agent_action`

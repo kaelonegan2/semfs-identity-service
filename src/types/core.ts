@@ -6,6 +6,7 @@ export type AuthScope =
   | "identity:status"
   | "identity:initialize"
   | "identity:read"
+  | "identity:profile_write"
   | "inbound:prepare"
   | "agent:read"
   | "agent:prepare"
@@ -41,6 +42,7 @@ export interface IdentityStore {
   readonly label: string;
   readText(path: string): Promise<string>;
   writeText(path: string, content: string, message?: string): Promise<WriteResult>;
+  writeManyText?(files: Array<{ path: string; content: string }>, message?: string): Promise<WriteResult[]>;
   exists(path: string): Promise<boolean>;
   listFiles(prefix?: string): Promise<string[]>;
 }

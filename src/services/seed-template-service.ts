@@ -25,21 +25,22 @@ export class SeedTemplateService {
     const overwriteMode = input.overwrite_mode ?? "refuse";
     const store = this.registry.createStoreFromTarget(input.target);
     const templateFiles = await this.listTemplateFiles();
-    const conflicts = [];
-    for (const relPath of templateFiles) {
-      if (await store.exists(relPath)) conflicts.push(relPath);
-    }
+    const conflicts = await this.findConflicts(store, templateFiles);
     if (conflicts.length && overwriteMode !== "replace_seed_files") {
       throw conflict("Target already contains SemFS seed files. Pass overwrite_mode=replace_seed_files to replace them.", {
         conflicts,
       });
     }
-    const writes: WriteResult[] = [];
-    for (const relPath of templateFiles) {
-      const source = await fs.readFile(path.join(this.templateRoot, relPath), "utf8");
-      const content = this.parameterize(source, identityId, displayName, input.owner_placeholder);
-      writes.push(await store.writeText(relPath, content, `semfs: initialize seed identity ${identityId}`));
-    }
+    const files = await Promise.all(
+      templateFiles.map(async (relPath) => {
+        const source = await fs.readFile(path.join(this.templateRoot, relPath), "utf8");
+        return { path: relPath, content: this.parameterize(source, identityId, displayName, input.owner_placeholder) };
+      })
+    );
+    const message = `semfs: initialize seed identity ${identityId}`;
+    const writes: WriteResult[] = store.writeManyText
+      ? await store.writeManyText(files, message)
+      : await this.writeOneAtATime(store, files, message);
     return {
       identity_id: identityId,
       display_name: displayName,
@@ -71,5 +72,30 @@ export class SeedTemplateService {
     };
     await walk(this.templateRoot);
     return files.sort();
+  }
+
+  private async findConflicts(store: IdentityStore, templateFiles: string[]): Promise<string[]> {
+    try {
+      const existing = new Set(await store.listFiles(""));
+      return templateFiles.filter((relPath) => existing.has(relPath));
+    } catch {
+      const conflicts = [];
+      for (const relPath of templateFiles) {
+        if (await store.exists(relPath)) conflicts.push(relPath);
+      }
+      return conflicts;
+    }
+  }
+
+  private async writeOneAtATime(
+    store: IdentityStore,
+    files: Array<{ path: string; content: string }>,
+    message: string
+  ): Promise<WriteResult[]> {
+    const writes = [];
+    for (const file of files) {
+      writes.push(await store.writeText(file.path, file.content, message));
+    }
+    return writes;
   }
 }
