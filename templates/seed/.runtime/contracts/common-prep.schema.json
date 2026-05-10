@@ -50,7 +50,7 @@
     },
     "prep": {
       "type": "object",
-      "required": ["identity", "conversation", "authority", "usage", "vector_context", "available_tools", "output_contract", "prompt_guidance"],
+      "required": ["identity", "conversation", "authority", "usage", "vector_context", "runtime_capabilities", "subagent_policy", "available_tools", "output_contract", "prompt_guidance"],
       "additionalProperties": false,
       "properties": {
         "identity": {
@@ -88,6 +88,34 @@
             "allowed_summaries": {"type": "array", "items": {"type": "object"}}
           }
         },
+        "runtime_capabilities": {
+          "type": "object",
+          "required": ["snapshot_available", "capabilities"],
+          "properties": {
+            "snapshot_available": {"type": "boolean"},
+            "reason": {"type": "string"},
+            "capabilities": {
+              "type": "object",
+              "required": [
+                "runtime_subagent_spawn",
+                "runtime_subagent_parallel",
+                "runtime_subagent_continuation",
+                "scoped_agent_runtime_grant",
+                "external_lookup",
+                "subagent_direct_response"
+              ],
+              "properties": {
+                "runtime_subagent_spawn": {"type": "boolean"},
+                "runtime_subagent_parallel": {"type": "boolean"},
+                "runtime_subagent_continuation": {"type": "boolean"},
+                "scoped_agent_runtime_grant": {"type": "boolean"},
+                "external_lookup": {"type": "boolean"},
+                "subagent_direct_response": {"type": "boolean"}
+              }
+            }
+          }
+        },
+        "subagent_policy": {"type": ["object", "null"]},
         "available_tools": {"type": "array", "items": {"type": "string"}},
         "output_contract": {"type": "object"},
         "prompt_guidance": {"type": "object"}

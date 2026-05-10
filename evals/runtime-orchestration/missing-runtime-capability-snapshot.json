@@ -1,0 +1,62 @@
+{
+  "schema_version": "runtime_orchestration_eval.v1",
+  "id": "missing-runtime-capability-snapshot",
+  "title": "Missing runtime capability snapshot denies orchestration",
+  "description": "A runtime tries to prepare orchestration before recording its capabilities. SemFS must deny the operation instead of inferring fallback powers.",
+  "suite": "runtime-orchestration",
+  "identity_stage": "seed",
+  "tags": ["no-fallbacks", "runtime-capabilities"],
+  "identity_id": "eval-identity",
+  "input": {
+    "auth": "runtime",
+    "conversation_id": "missing-snapshot",
+    "run_id": "run-001",
+    "inbound_type": "human_or_external",
+    "message": "Please improve this identity in the background.",
+    "owner_verified": false,
+    "runtime_capabilities": {
+      "runtime_subagent_spawn": true,
+      "runtime_subagent_parallel": true,
+      "runtime_subagent_continuation": true,
+      "scoped_agent_runtime_grant": true,
+      "external_lookup": false,
+      "subagent_direct_response": false
+    },
+    "runtime_tools": ["runtime_subagent_spawn", "runtime_subagent_continuation", "scoped_agent_runtime_grant"]
+  },
+  "fixture_plan": {
+    "schema_version": "runtime_orchestration_plan.v1",
+    "planner": "fixture",
+    "actions": [
+      {
+        "tool": "semfs_prepare_orchestration_run",
+        "principal": "runtime",
+        "input": {
+          "conversation_id": "missing-snapshot",
+          "run_id": "run-001"
+        }
+      }
+    ],
+    "final_response": {
+      "responded": true,
+      "responder": "parent_runtime",
+      "text": "I can’t safely start background work from that request yet. I need a clear record of what this chat is allowed to do first, so I’ll stop here rather than guess."
+    }
+  },
+  "expect": {
+    "required_calls": [
+      { "tool": "semfs_prepare_orchestration_run", "principal": "runtime", "status": 403 }
+    ],
+    "forbidden_calls": [
+      { "tool": "semfs_prepare_subagent_run" },
+      { "tool": "semfs_record_owner_context" }
+    ],
+    "required_artifacts": [],
+    "final_response": {
+      "responded": true,
+      "responder": "parent_runtime",
+      "text_contains": ["I can’t safely start background work", "rather than guess"],
+      "text_excludes": ["runtime", "capability", "orchestration", "sub-agent", "snapshot"]
+    }
+  }
+}

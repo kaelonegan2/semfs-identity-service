@@ -1,0 +1,142 @@
+{
+  "schema_version": "runtime_orchestration_eval.v1",
+  "id": "owner-turn-continuation",
+  "title": "Owner turn can spawn a continuation context collector",
+  "description": "An owner inbound provides maturation context while runtime continuation support is available. The runtime should prepare the inbound, record capabilities, prepare orchestration, grant a continuation sub-agent, and let that scoped agent record owner context without activating live capabilities.",
+  "suite": "runtime-orchestration",
+  "identity_stage": "seed",
+  "tags": ["owner-turn", "continuation-subagent", "maturation"],
+  "identity_id": "eval-identity",
+  "input": {
+    "auth": "owner_runtime",
+    "conversation_id": "owner-turn-continuation",
+    "run_id": "run-001",
+    "inbound_type": "owner_turn",
+    "message": "I want this identity to mature by learning owner context, drafting knowledge, and keeping capability activation blocked until review.",
+    "owner_verified": true,
+    "runtime_capabilities": {
+      "runtime_subagent_spawn": true,
+      "runtime_subagent_parallel": true,
+      "runtime_subagent_continuation": true,
+      "scoped_agent_runtime_grant": true,
+      "external_lookup": false,
+      "subagent_direct_response": false
+    },
+    "runtime_tools": ["runtime_subagent_spawn", "runtime_subagent_continuation", "scoped_agent_runtime_grant"]
+  },
+  "fixture_plan": {
+    "schema_version": "runtime_orchestration_plan.v1",
+    "planner": "fixture",
+    "actions": [
+      {
+        "tool": "semfs_get_identity_status",
+        "principal": "owner_runtime",
+        "input": {}
+      },
+      {
+        "tool": "semfs_prepare_inbound",
+        "principal": "owner_runtime",
+        "input": {
+          "message": "I want this identity to mature by learning owner context, drafting knowledge, and keeping capability activation blocked until review.",
+          "conversation_id": "owner-turn-continuation",
+          "run_id": "run-001",
+          "owner_verified": true,
+          "runtime_capabilities": {
+            "runtime_subagent_spawn": true,
+            "runtime_subagent_parallel": true,
+            "runtime_subagent_continuation": true,
+            "scoped_agent_runtime_grant": true,
+            "external_lookup": false,
+            "subagent_direct_response": false
+          },
+          "runtime_tools": ["runtime_subagent_spawn", "runtime_subagent_continuation", "scoped_agent_runtime_grant"]
+        }
+      },
+      {
+        "tool": "semfs_prepare_orchestration_run",
+        "principal": "owner_runtime",
+        "input": {
+          "conversation_id": "owner-turn-continuation",
+          "run_id": "run-001",
+          "owner_verified": true
+        }
+      },
+      {
+        "tool": "semfs_prepare_subagent_run",
+        "principal": "owner_runtime",
+        "save_grant_as": "context_collector",
+        "input": {
+          "conversation_id": "owner-turn-continuation",
+          "run_id": "run-001",
+          "agent_id": "context_collector",
+          "subagent_type": "continuation_subagent",
+          "inbound_type": "owner_turn",
+          "ttl_seconds": 300,
+          "owner_verified": true
+        }
+      },
+      {
+        "tool": "semfs_record_owner_context",
+        "principal": "grant:context_collector",
+        "input": {
+          "conversation_id": "owner-turn-continuation",
+          "context_id": "owner-maturation-direction",
+          "summary": "Owner wants identity maturation to prioritize context capture, draft knowledge, and reviewed activation boundaries.",
+          "details": {
+            "source_turn": "owner inbound",
+            "activation_boundary": "no unsupervised live capability activation"
+          }
+        }
+      },
+      {
+        "tool": "semfs_record_agent_run_result",
+        "principal": "grant:context_collector",
+        "input": {
+          "conversation_id": "owner-turn-continuation",
+          "run_id": "run-001-context-collector",
+          "result_id": "context-collector-result",
+          "status": "completed",
+          "output": {
+            "recorded_owner_context": true,
+            "activation_performed": false
+          }
+        }
+      }
+    ],
+    "final_response": {
+      "responded": true,
+      "responder": "parent_runtime",
+      "text": "Got it. I’ll treat that as the direction for maturation: capture the context, draft useful knowledge, and keep anything live or outward-facing behind review. I can start the safe background work now and keep final decisions with me."
+    }
+  },
+  "expect": {
+    "required_calls": [
+      { "tool": "semfs_get_identity_status", "principal": "owner_runtime", "status": 200 },
+      { "tool": "semfs_prepare_inbound", "principal": "owner_runtime", "status": 200 },
+      { "tool": "semfs_prepare_orchestration_run", "principal": "owner_runtime", "status": 200 },
+      {
+        "tool": "semfs_prepare_subagent_run",
+        "principal": "owner_runtime",
+        "status": 200,
+        "input": { "agent_id": "context_collector", "subagent_type": "continuation_subagent" },
+        "result": { "grant": { "response_authority": "parent_reviewed" } }
+      },
+      { "tool": "semfs_record_owner_context", "principal": "grant:context_collector", "status": 200 },
+      { "tool": "semfs_record_agent_run_result", "principal": "grant:context_collector", "status": 200 }
+    ],
+    "forbidden_calls": [
+      { "tool": "semfs_apply_owner_identity_seed" },
+      { "tool": "external_lookup" }
+    ],
+    "required_artifacts": [
+      "conversations/owner-turn-continuation/runs/run-001/runtime-capabilities.json",
+      "conversations/owner-turn-continuation/artifacts/owner-context-owner-maturation-direction.json"
+    ],
+    "final_response": {
+      "responded": true,
+      "responder": "parent_runtime",
+      "text_contains": ["direction for maturation", "behind review"],
+      "text_excludes": ["runtime", "sub-agent", "capability activation", "parent-reviewed", "SemFS"]
+    }
+  }
+}

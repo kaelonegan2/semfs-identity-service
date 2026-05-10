@@ -48,6 +48,8 @@
     "orchestration": { "type": "object" },
     "identity_authority": { "type": "object" },
     "usage": { "type": "object" },
+    "runtime_capabilities": { "type": "object" },
+    "subagent_runs": { "type": "array", "items": { "type": "object" } },
     "facets": { "type": "object" },
     "outbound": { "type": "object" },
     "audit": { "type": "object" }

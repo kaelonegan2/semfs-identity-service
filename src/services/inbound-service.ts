@@ -3,12 +3,16 @@ import { readOptionalText } from "./json.js";
 import { IdentityBundle, IdentityLoader } from "./identity-loader.js";
 import { PolicyService } from "./policy-service.js";
 import { runtimeGuidanceOverlay } from "./agent-service.js";
+import { RuntimeOrchestrationService } from "./runtime-orchestration-service.js";
 
 interface PrepareInboundInput {
   message?: string;
   conversation_id?: string | null;
+  run_id?: string;
   inbound_source?: string;
   include_agent_prompt?: boolean;
+  runtime_capabilities?: Record<string, unknown>;
+  runtime_tools?: string[];
   owner_verified?: boolean;
   trust_level?: string;
   risk_detected?: boolean;
@@ -23,7 +27,8 @@ interface PrepareInboundInput {
 export class InboundService {
   constructor(
     private readonly loader: IdentityLoader,
-    private readonly policy: PolicyService
+    private readonly policy: PolicyService,
+    private readonly runtime: RuntimeOrchestrationService
   ) {}
 
   async prepare(mount: IdentityMount, input: PrepareInboundInput): Promise<Record<string, unknown>> {
@@ -45,8 +50,12 @@ export class InboundService {
     }
 
     const bundle = await this.loader.load(mount);
+    const runtimeCapabilityRecord = input.runtime_capabilities
+      ? await this.runtime.recordRuntimeCapabilities(mount, bundle, { ...input, source: input.context_kind ?? "inbound_prepare" }, input.auth)
+      : null;
+    const runtimeCapabilityContext = await this.runtime.runtimeCapabilityContext(mount, input as Record<string, unknown>);
     const routes = this.policy.activeRoutes(bundle);
-    const routeId = this.selectRoute(bundle, routes, input, access);
+    const routeId = this.selectRoute(bundle, routes, input, access, runtimeCapabilityContext);
     const route = routes[routeId];
     const agentId = String(route?.agent_id ?? this.firstActiveAgent(bundle) ?? "stop");
     const agent = this.policy.agentRecord(bundle, agentId);
@@ -83,7 +92,11 @@ export class InboundService {
         route: routeId,
         agent_id: agentId,
         trust_required: route?.trust_required ?? "unspecified",
-        reason: this.routeReason(routeId, input, access, bundle),
+        reason: this.routeReason(routeId, input, access, bundle, runtimeCapabilityContext),
+      },
+      runtime_capabilities: {
+        ...runtimeCapabilityContext,
+        recorded_this_turn: runtimeCapabilityRecord ? runtimeCapabilityRecord : null,
       },
       agent: {
         id: agentId,
@@ -103,8 +116,8 @@ export class InboundService {
         posture: this.responsePosture(bundle, input, access),
         action_guidance: this.actionGuidance(bundle, access),
         inbound_authority: this.inboundAuthorityRules(input, access),
-        capability_context: this.capabilityContext(bundle, input),
-        response_style: this.responseStyleRules(input, bundle),
+        capability_context: this.capabilityContext(bundle, input, runtimeCapabilityContext),
+        response_style: this.responseStyleRules(input, bundle, runtimeCapabilityContext),
         do_not_expose: [
           "internal routes",
           "decision.routing.next",
@@ -326,15 +339,20 @@ export class InboundService {
     return {};
   }
 
-  private capabilityContext(bundle: IdentityBundle, input: PrepareInboundInput): Record<string, unknown> {
+  private capabilityContext(
+    bundle: IdentityBundle,
+    input: PrepareInboundInput,
+    runtimeCapabilityContext: Record<string, unknown>
+  ): Record<string, unknown> {
     const liveExternalDataRequested = this.needsLiveExternalData(input);
-    const externalLookupAvailable = this.hasActiveExternalLookupTool(bundle);
+    const externalLookupAvailable = this.hasActiveExternalLookupTool(bundle, runtimeCapabilityContext);
     return {
       live_or_external_data_requested: liveExternalDataRequested,
       external_lookup_available: externalLookupAvailable,
+      runtime_capability_snapshot_available: runtimeCapabilityContext.snapshot_available === true,
       external_lookup_policy:
         liveExternalDataRequested && !externalLookupAvailable
-          ? "Do not claim you can fetch, look up, research, or verify live external data. State the limitation once in plain language and offer a useful alternative."
+          ? "Do not claim you can fetch, look up, research, or verify live external data. A runtime capability snapshot must explicitly enable external lookup before it can be used. State the limitation once in plain language and offer a useful alternative."
           : "Use only tools and data actually exposed by the runtime. Do not imply unavailable external lookup, browsing, weather, or research capability.",
       missing_capability:
         liveExternalDataRequested && !externalLookupAvailable
@@ -347,9 +365,13 @@ export class InboundService {
     };
   }
 
-  private responseStyleRules(input: PrepareInboundInput, bundle: IdentityBundle): Record<string, unknown> {
+  private responseStyleRules(
+    input: PrepareInboundInput,
+    bundle: IdentityBundle,
+    runtimeCapabilityContext: Record<string, unknown>
+  ): Record<string, unknown> {
     const liveExternalDataRequested = this.needsLiveExternalData(input);
-    const externalLookupAvailable = this.hasActiveExternalLookupTool(bundle);
+    const externalLookupAvailable = this.hasActiveExternalLookupTool(bundle, runtimeCapabilityContext);
     return {
       factuality: "Never invent facts, capabilities, tool access, live data, memory, or authority. Say what is known, what is unavailable, and what safe next step is possible.",
       tone: "Warm, plain-spoken, non-technical, and concise.",
@@ -413,13 +435,14 @@ export class InboundService {
     bundle: IdentityBundle,
     routes: Record<string, Record<string, unknown>>,
     input: PrepareInboundInput,
-    access: Record<string, unknown>
+    access: Record<string, unknown>,
+    runtimeCapabilityContext: Record<string, unknown>
   ): string {
     const available = new Set(Object.keys(routes));
     const ownerVerified = this.effectiveOwnerVerified(input, access);
     const lifecycleMode = String(bundle.lifecycle.current_mode ?? "unknown");
     if (input.risk_detected && available.has("human_review")) return "human_review";
-    if (this.needsLiveExternalData(input) && !this.hasActiveExternalLookupTool(bundle)) {
+    if (this.needsLiveExternalData(input) && !this.hasActiveExternalLookupTool(bundle, runtimeCapabilityContext)) {
       if (lifecycleMode.includes("seed") && ownerVerified && available.has("capability_gap")) return "capability_gap";
       if (this.hasEnoughExternalLookupDetails(input) && available.has("stop")) return "stop";
       if (available.has("clarify_intent")) return "clarify_intent";
@@ -439,8 +462,14 @@ export class InboundService {
     return Object.keys(routes)[0] ?? (this.firstActiveAgent(bundle) ? "direct_agent" : "stop");
   }
 
-  private routeReason(route: string, input: PrepareInboundInput, access: Record<string, unknown>, bundle: IdentityBundle): string {
-    if (this.needsLiveExternalData(input) && !this.hasActiveExternalLookupTool(bundle)) {
+  private routeReason(
+    route: string,
+    input: PrepareInboundInput,
+    access: Record<string, unknown>,
+    bundle: IdentityBundle,
+    runtimeCapabilityContext: Record<string, unknown>
+  ): string {
+    if (this.needsLiveExternalData(input) && !this.hasActiveExternalLookupTool(bundle, runtimeCapabilityContext)) {
       if (route === "capability_gap") return "The request needs live or external data, but no active external lookup tool is available.";
       if (route === "stop") return "The request cannot be completed with current runtime capabilities; provide the safest useful alternative.";
       if (route === "clarify_intent") return "The request may need live or external data, but more detail is needed before giving a useful no-lookup alternative.";
@@ -484,7 +513,8 @@ export class InboundService {
     return /\b\d{5}(?:-\d{4})?\b/.test(text) || /\b(city|zip|postal|for|in|near)\b/.test(text);
   }
 
-  private hasActiveExternalLookupTool(bundle: IdentityBundle): boolean {
+  private hasActiveExternalLookupTool(bundle: IdentityBundle, runtimeCapabilityContext: Record<string, unknown>): boolean {
+    if (!this.runtime.capabilityEnabled(runtimeCapabilityContext, "external_lookup")) return false;
     const baseline = (bundle.tools_registry.baseline_internal_tools as Record<string, unknown>[] | undefined) ?? [];
     const optional = (bundle.tools_registry.optional_runtime_tools as Record<string, unknown>[] | undefined) ?? [];
     const tools = [...baseline, ...optional];
@@ -552,7 +582,9 @@ export class InboundService {
                 ? "readonly"
                 : tokenClass === "public"
                   ? "public"
-                  : "unknown",
+                  : tokenClass === "agent_runtime"
+                    ? "agent_runtime"
+                    : "unknown",
       owner_capable_credential: ownerCapable,
       owner_verified_by_credential: tokenClass === "owner_runtime",
       interpretation:
@@ -564,7 +596,9 @@ export class InboundService {
               ? "Credential represents a trusted runtime, not an owner-verified inbound user."
               : tokenClass === "readonly"
                 ? "Credential can inspect identity state but should not write or take authority-bearing actions."
-                : "Public or unknown access: expose only public-safe behavior.",
+                : tokenClass === "agent_runtime"
+                  ? "Credential is an ephemeral scoped agent runtime grant."
+                  : "Public or unknown access: expose only public-safe behavior.",
     };
   }
 

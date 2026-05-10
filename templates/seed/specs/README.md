@@ -13,10 +13,11 @@ Role: `guidance` for runtime builders and identity designers.
 5. `agent-model.md`
 6. `prompt-guidance-model.md`
 7. `vector-reference-model.md`
-8. `semfs-upsert-model.md`
-9. `capability-evolution.md`
-10. `identity-template-model.md`
-11. `current-runtime-salvage-plan.md`
+8. `owner-context-to-semfs-ops.md`
+9. `semfs-upsert-model.md`
+10. `capability-evolution.md`
+11. `identity-template-model.md`
+12. `current-runtime-salvage-plan.md`
 
 For current mid-state autonomy, also read `identity_state/lifecycle/`, `identity_state/authority/`, and `identity_state/governance/`.
 

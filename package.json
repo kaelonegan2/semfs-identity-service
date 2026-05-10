@@ -31,6 +31,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx src/index.ts",
+    "eval:runtime": "node --import tsx src/evals/runtime-orchestration-eval.ts",
     "start": "node dist/index.js",
     "mcp": "tsx src/mcp/stdio.ts",
     "test": "vitest run",

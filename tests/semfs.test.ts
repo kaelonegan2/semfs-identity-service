@@ -10,14 +10,14 @@ import { selectMcpPrincipal } from "../src/mcp/principal.js";
 import { createContainer } from "../src/services/container.js";
 import { createApp } from "../src/server/app.js";
 import { SeedTemplateService } from "../src/services/seed-template-service.js";
-import { IdentityStore } from "../src/types/core.js";
+import { AuthPrincipal, IdentityStore, TokenClass } from "../src/types/core.js";
 
 async function tempIdentityRoot() {
   return fs.mkdtemp(path.join(os.tmpdir(), "semfs-test-"));
 }
 
-async function listMcpToolNames(container: ReturnType<typeof createContainer>, tokenClass: "public" | "readonly" | "runtime" | "owner_runtime" | "admin") {
-  const server = createMcpServer(container, { id: `test-${tokenClass}`, tokenClass, scopes: container.config.authPrincipals.find((principal) => principal.tokenClass === tokenClass)?.scopes ?? [] });
+async function listMcpToolNamesForPrincipal(container: ReturnType<typeof createContainer>, principal: AuthPrincipal) {
+  const server = createMcpServer(container, principal);
   const client = new Client({ name: "semfs-test-client", version: "0.1.0" });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await server.connect(serverTransport);
@@ -29,6 +29,14 @@ async function listMcpToolNames(container: ReturnType<typeof createContainer>, t
     await client.close();
     await server.close();
   }
+}
+
+async function listMcpToolNames(container: ReturnType<typeof createContainer>, tokenClass: Exclude<TokenClass, "agent_runtime">) {
+  return listMcpToolNamesForPrincipal(container, {
+    id: `test-${tokenClass}`,
+    tokenClass,
+    scopes: container.config.authPrincipals.find((principal) => principal.tokenClass === tokenClass)?.scopes ?? [],
+  });
 }
 
 describe("SemFS service", () => {
@@ -280,7 +288,7 @@ describe("SemFS service", () => {
       url: "/v1/identities/test-identity/inbound/prepare",
       headers: { authorization: "Bearer runtime-token" },
       payload: {
-        message: "Fetch today's weather for ZIP 15057",
+        message: "Fetch today's weather for ZIP 12345",
         intent: "fetch_weather",
         decision: "lookup_requested",
         context_kind: "user_request",
@@ -294,6 +302,257 @@ describe("SemFS service", () => {
     expect(packet.json().response_rules.capability_context.external_lookup_policy).toContain("Do not claim you can fetch");
     expect(packet.json().response_rules.response_style.live_external_data).toContain("Do not ask for permission");
     expect(JSON.stringify(packet.json())).not.toContain("# Owner Onboarding");
+  });
+
+  it("records runtime capability snapshots and upserts only when capabilities change", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const app = await createApp(container);
+
+    const payload = {
+      conversation_id: "runtime-capabilities",
+      run_id: "run-001",
+      runtime_capabilities: {
+        runtime_subagent_spawn: true,
+        runtime_subagent_parallel: true,
+        runtime_subagent_continuation: false,
+        scoped_agent_runtime_grant: true,
+        external_lookup: false,
+        subagent_direct_response: false,
+      },
+      runtime_tools: ["runtime_subagent_spawn", "scoped_agent_runtime_grant"],
+    };
+
+    const first = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/runtime/capabilities",
+      headers: { authorization: "Bearer runtime-token" },
+      payload,
+    });
+    expect(first.statusCode).toBe(200);
+    expect(first.json().capability_changed).toBe(true);
+    expect(first.json().snapshot.capabilities.runtime_subagent_spawn).toBe(true);
+
+    const second = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/runtime/capabilities",
+      headers: { authorization: "Bearer runtime-token" },
+      payload,
+    });
+    expect(second.statusCode).toBe(200);
+    expect(second.json().capability_changed).toBe(false);
+    expect(second.json().vector_upsert).toBe(null);
+
+    const changed = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/runtime/capabilities",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: {
+        ...payload,
+        runtime_capabilities: { ...payload.runtime_capabilities, runtime_subagent_continuation: true },
+      },
+    });
+    expect(changed.statusCode).toBe(200);
+    expect(changed.json().capability_changed).toBe(true);
+
+    const snapshot = await fs.readFile(path.join(root, "conversations/runtime-capabilities/runs/run-001/runtime-capabilities.json"), "utf8");
+    expect(snapshot).toContain("runtime_capability_snapshot.v1");
+    const vectorLog = await fs.readFile(path.join(root, ".memory/vector/test-identity/runtime-capability-summaries.jsonl"), "utf8");
+    expect(vectorLog.trim().split("\n")).toHaveLength(2);
+  });
+
+  it("prepares scoped inline, parallel, and continuation sub-agent grants only from explicit snapshots and policy", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "owner-runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const app = await createApp(container);
+
+    const missingSnapshot = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/runs/prepare-orchestration",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: { conversation_id: "owner-turn", run_id: "run-001" },
+    });
+    expect(missingSnapshot.statusCode).toBe(403);
+
+    const snapshot = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/runtime/capabilities",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: {
+        conversation_id: "owner-turn",
+        run_id: "run-001",
+        runtime_capabilities: {
+          runtime_subagent_spawn: true,
+          runtime_subagent_parallel: true,
+          runtime_subagent_continuation: true,
+          scoped_agent_runtime_grant: true,
+          external_lookup: false,
+          subagent_direct_response: false,
+        },
+      },
+    });
+    expect(snapshot.statusCode).toBe(200);
+
+    const orchestration = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/runs/prepare-orchestration",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: { conversation_id: "owner-turn", run_id: "run-001", owner_verified: true },
+    });
+    expect(orchestration.statusCode).toBe(200);
+    expect(orchestration.json().allowed_subagent_types).toEqual(["inline_subagent", "parallel_subagent", "continuation_subagent"]);
+    expect(orchestration.json().owner_turn_maturation.enabled).toBe(true);
+
+    const grantResponse = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/runs/prepare-subagent",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: {
+        conversation_id: "owner-turn",
+        run_id: "run-001",
+        agent_id: "context_collector",
+        subagent_type: "continuation_subagent",
+        inbound_type: "owner_turn",
+        ttl_seconds: 60,
+        owner_verified: true,
+      },
+    });
+    expect(grantResponse.statusCode).toBe(200);
+    expect(grantResponse.json().grant.token_class).toBe("agent_runtime");
+    expect(grantResponse.json().grant.allowed_tools).toContain("semfs_record_owner_context");
+    expect(grantResponse.json().grant.response_authority).toBe("parent_reviewed");
+
+    const grantRecord = await fs.readFile(path.join(root, grantResponse.json().grant_record_path), "utf8");
+    expect(grantRecord).not.toContain(grantResponse.json().grant.token);
+
+    const ownerContext = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/context/owner",
+      headers: { authorization: `Bearer ${grantResponse.json().grant.token}` },
+      payload: {
+        conversation_id: "owner-turn",
+        summary: "Owner clarified the identity should prioritize thoughtful maturation.",
+      },
+    });
+    expect(ownerContext.statusCode).toBe(200);
+    expect(ownerContext.json().context.schema_version).toBe("owner_context.v1");
+
+    const deniedProfileWrite = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/profile/apply-owner-seed",
+      headers: { authorization: `Bearer ${grantResponse.json().grant.token}` },
+      payload: { display_name: "Should Not Apply" },
+    });
+    expect(deniedProfileWrite.statusCode).toBe(403);
+
+    const nonOwnerGrant = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/runs/prepare-subagent",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: {
+        conversation_id: "owner-turn",
+        run_id: "run-001",
+        agent_id: "context_collector",
+        subagent_type: "parallel_subagent",
+        inbound_type: "human_or_external",
+        ttl_seconds: 60,
+      },
+    });
+    expect(nonOwnerGrant.statusCode).toBe(200);
+
+    const selfAssertedOwnerContext = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/context/owner",
+      headers: { authorization: `Bearer ${nonOwnerGrant.json().grant.token}` },
+      payload: {
+        conversation_id: "owner-turn",
+        summary: "This should not be accepted as owner context.",
+        owner_verified: true,
+      },
+    });
+    expect(selfAssertedOwnerContext.statusCode).toBe(403);
+
+    const directResponseDenied = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/runs/prepare-subagent",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: {
+        conversation_id: "owner-turn",
+        run_id: "run-001",
+        agent_id: "context_collector",
+        subagent_type: "inline_subagent",
+        inbound_type: "owner_turn",
+        ttl_seconds: 60,
+        owner_verified: true,
+        request_direct_response: true,
+      },
+    });
+    expect(directResponseDenied.statusCode).toBe(403);
+  });
+
+  it("records schema-backed maturation operation artifacts without activation", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "owner-runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const app = await createApp(container);
+
+    const gap = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/capability-gaps",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: {
+        gap_id: "missing-public-research",
+        gap: "Public research is not available in this runtime.",
+        blocked_action: "Verifying current public facts.",
+        safe_default: "Ask for supplied sources or prepare a research plan.",
+      },
+    });
+    expect(gap.statusCode).toBe(200);
+    expect(gap.json().gap.activation_performed).toBe(false);
+    expect(gap.json().path).toBe("identity_state/capability_evolution/gaps/missing-public-research.json");
+
+    const proposal = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/capability-proposals",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: {
+        proposal_id: "public-research-support",
+        name: "Public research support",
+        summary: "Allow approved public-source research with source notes.",
+        activation_requirements: ["owner approval", "runtime tool support", "eval coverage"],
+      },
+    });
+    expect(proposal.statusCode).toBe(200);
+    expect(proposal.json().proposal.status).toBe("proposed_inactive");
+    expect(proposal.json().proposal.activation_performed).toBe(false);
+
+    const link = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/approvals/link-artifact",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: {
+        link_id: "approval-public-research-support",
+        decision_id: "decision-public-research-support",
+        artifact_ref: proposal.json().path,
+        approval_status: "approved_for_future_activation_review",
+      },
+    });
+    expect(link.statusCode).toBe(200);
+    expect(link.json().approval_link.activation_performed).toBe(false);
+
+    const proposalFile = JSON.parse(await fs.readFile(path.join(root, proposal.json().path), "utf8"));
+    expect(proposalFile.status).toBe("proposed_inactive");
+    expect(proposalFile.activation_performed).toBe(false);
   });
 
   it("prepares dream packets and rejects activation-like findings", async () => {
@@ -422,6 +681,7 @@ describe("SemFS service", () => {
 
     const runtimeTools = [
       "semfs_authorize_agent_action",
+      "semfs_create_capability_proposal",
       "semfs_create_review_packet",
       "semfs_get_agent",
       "semfs_get_identity_status",
@@ -430,6 +690,14 @@ describe("SemFS service", () => {
       "semfs_prepare_agent_action",
       "semfs_prepare_dream",
       "semfs_prepare_inbound",
+      "semfs_prepare_orchestration_run",
+      "semfs_prepare_subagent_run",
+      "semfs_record_agent_run_event",
+      "semfs_record_agent_run_result",
+      "semfs_record_capability_gap",
+      "semfs_record_inbound_context",
+      "semfs_record_owner_context",
+      "semfs_record_runtime_capabilities",
       "semfs_validate_agent_output",
       "semfs_validate_dream",
       "semfs_vector_search",
@@ -444,11 +712,104 @@ describe("SemFS service", () => {
     );
     await expect(listMcpToolNames(container, "runtime")).resolves.toEqual(runtimeTools);
     await expect(listMcpToolNames(container, "owner_runtime")).resolves.toEqual(
-      [...runtimeTools, "semfs_apply_owner_identity_seed", "semfs_capture_approval"].sort()
+      [...runtimeTools, "semfs_apply_owner_identity_seed", "semfs_capture_approval", "semfs_link_approval_to_artifact"].sort()
     );
     await expect(listMcpToolNames(container, "admin")).resolves.toEqual(
-      [...runtimeTools, "semfs_capture_approval", "semfs_initialize_identity"].sort()
+      [...runtimeTools, "semfs_capture_approval", "semfs_initialize_identity", "semfs_link_approval_to_artifact"].sort()
     );
+  });
+
+  it("exposes only granted MCP tools for scoped agent runtime credentials", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const mount = container.registry.resolve("test-identity");
+    const bundle = await container.loader.load(mount);
+    const principal = container.auth.authenticate("Bearer runtime-token")!;
+
+    await container.runtime.recordRuntimeCapabilities(
+      mount,
+      bundle,
+      {
+        conversation_id: "mcp-agent-grant",
+        run_id: "run-001",
+        runtime_capabilities: {
+          runtime_subagent_spawn: true,
+          runtime_subagent_parallel: true,
+          runtime_subagent_continuation: true,
+          scoped_agent_runtime_grant: true,
+          external_lookup: false,
+          subagent_direct_response: false,
+        },
+      },
+      principal
+    );
+
+    const prepared = await container.runtime.prepareSubagentRun(
+      mount,
+      bundle,
+      {
+        conversation_id: "mcp-agent-grant",
+        run_id: "run-001",
+        agent_id: "context_collector",
+        subagent_type: "parallel_subagent",
+        inbound_type: "owner_turn",
+        ttl_seconds: 60,
+        owner_verified: true,
+      },
+      principal
+    );
+    const grant = prepared.grant as Record<string, unknown>;
+    expect(grant.run_id).toMatch(/^run-001-/);
+    const grantToken = grant.token as string;
+    const agentPrincipal = container.auth.authenticate(`Bearer ${grantToken}`)!;
+
+    await expect(listMcpToolNamesForPrincipal(container, agentPrincipal)).resolves.toEqual(
+      [
+        "semfs_record_agent_run_event",
+        "semfs_record_agent_run_result",
+        "semfs_record_inbound_context",
+        "semfs_record_owner_context",
+        "semfs_vector_upsert",
+        "semfs_write_safe_artifact",
+      ].sort()
+    );
+
+    const app = await createApp(container, { logger: false });
+    const allowedContext = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/context/inbound",
+      headers: { authorization: `Bearer ${grantToken}` },
+      payload: {
+        conversation_id: "mcp-agent-grant",
+        summary: "Allowed context capture inside the granted conversation.",
+      },
+    });
+    expect(allowedContext.statusCode).toBe(200);
+
+    const deniedConversation = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/context/inbound",
+      headers: { authorization: `Bearer ${grantToken}` },
+      payload: {
+        conversation_id: "other-conversation",
+        summary: "This should not cross the grant conversation boundary.",
+      },
+    });
+    expect(deniedConversation.statusCode).toBe(403);
+
+    const deniedNamespace = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/vector/upsert",
+      headers: { authorization: `Bearer ${grantToken}` },
+      payload: {
+        namespace: "capability-gap-history",
+        summary: "This namespace is not granted to context_collector.",
+      },
+    });
+    expect(deniedNamespace.statusCode).toBe(403);
   });
 
   it("applies owner-approved identity seed updates through owner runtime only", async () => {

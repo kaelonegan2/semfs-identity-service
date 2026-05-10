@@ -14,20 +14,46 @@ export type AuthScope =
   | "agent:authorize"
   | "agent:validate"
   | "run:prepare"
+  | "run:orchestrate"
+  | "run:record"
+  | "runtime:capability_write"
   | "memory:search"
   | "memory:write"
   | "artifact:safe_write"
+  | "context:write"
+  | "evolution:write"
   | "review:write"
   | "approval:write"
   | "dream:prepare"
   | "dream:validate"
   | "dream:write";
 
+export type TokenClass = "public" | "readonly" | "runtime" | "owner_runtime" | "admin" | "agent_runtime";
+
+export type SubagentType = "inline_subagent" | "parallel_subagent" | "continuation_subagent";
+
+export interface AgentRuntimeGrant {
+  grantId: string;
+  runId: string;
+  parentRunId: string;
+  conversationId: string;
+  agentId: string;
+  subagentType: SubagentType;
+  expiresAt: string;
+  scopes: AuthScope[];
+  allowedTools: string[];
+  allowedOperationFamilies: string[];
+  allowedVectorNamespaces: string[];
+  responseAuthority: "parent_reviewed" | "direct_response_allowed";
+  ownerVerified: boolean;
+}
+
 export interface AuthPrincipal {
   id: string;
-  tokenClass: "public" | "readonly" | "runtime" | "owner_runtime" | "admin";
+  tokenClass: TokenClass;
   scopes: AuthScope[];
   token?: string;
+  agentRuntimeGrant?: AgentRuntimeGrant;
 }
 
 export interface WriteResult {
@@ -84,6 +110,7 @@ export interface TrustContext {
 export interface AgentActionRequest {
   message_summary?: string;
   conversation_id?: string | null;
+  run_id?: string;
   route?: string;
   trust?: TrustContext;
   requested_tool?: string;

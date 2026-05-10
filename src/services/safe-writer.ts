@@ -7,6 +7,7 @@ import { IdentityBundle } from "./identity-loader.js";
 const SAFE_PREFIXES = [
   "conversations/",
   "identity_state/capability_evolution/gaps.md",
+  "identity_state/capability_evolution/gaps/",
   "identity_state/capability_evolution/proposals/",
   "identity_state/knowledge/review-queue.md",
   "identity_state/research/",

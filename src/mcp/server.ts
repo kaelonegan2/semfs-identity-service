@@ -15,8 +15,12 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     return container.auth.hasScope(activePrincipal, scope);
   }
 
-  function hasAny(scopes: AuthScope[]): boolean {
-    return scopes.some((scope) => has(scope));
+  function canUse(toolName: string, scope: AuthScope): boolean {
+    return has(scope) && container.auth.canUseTool(activePrincipal, toolName);
+  }
+
+  function canUseAny(toolName: string, scopes: AuthScope[]): boolean {
+    return scopes.some((scope) => has(scope)) && container.auth.canUseTool(activePrincipal, toolName);
   }
 
   async function load(identityId: string) {
@@ -25,7 +29,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     return { mount, bundle };
   }
 
-  if (has("identity:initialize")) server.tool(
+  if (canUse("semfs_initialize_identity", "identity:initialize")) server.tool(
     "semfs_initialize_identity",
     "Initialize a target repo with the business-neutral SemFS seed identity template.",
     {
@@ -37,7 +41,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     async (args) => text(await container.seedTemplates.initialize(args))
   );
 
-  if (has("identity:status")) server.tool(
+  if (canUse("semfs_get_identity_status", "identity:status")) server.tool(
     "semfs_get_identity_status",
     "Check whether a SemFS identity is ready, uninitialized, or incomplete without requiring the full manifest to load.",
     { identity_id: z.string().default(container.config.defaultIdentityId) },
@@ -49,13 +53,16 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("inbound:prepare")) server.tool(
+  if (canUse("semfs_prepare_inbound", "inbound:prepare")) server.tool(
     "semfs_prepare_inbound",
     "Prepare a compact identity-aware runtime packet for an arbitrary inbound message.",
     {
       identity_id: z.string().default(container.config.defaultIdentityId),
       message: z.string().optional(),
       conversation_id: z.string().nullable().optional(),
+      run_id: z.string().optional(),
+      runtime_capabilities: z.record(z.unknown()).optional(),
+      runtime_tools: z.array(z.string()).optional(),
       owner_verified: z.boolean().optional(),
       trust_level: z.string().optional(),
       risk_detected: z.boolean().optional(),
@@ -71,7 +78,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("identity:read")) server.tool(
+  if (canUse("semfs_get_manifest", "identity:read")) server.tool(
     "semfs_get_manifest",
     "Read the SemFS identity manifest and active runtime surface.",
     { identity_id: z.string().default(container.config.defaultIdentityId) },
@@ -81,7 +88,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (hasAny(["identity:profile_write", "identity:seed_update"])) server.tool(
+  if (canUseAny("semfs_apply_owner_identity_seed", ["identity:profile_write", "identity:seed_update"])) server.tool(
     "semfs_apply_owner_identity_seed",
     "Apply verified-owner seed identity direction to canonical profile, brief, README, and status surfaces. This does not activate capabilities, external actions, credentials, payments, publishing, or lifecycle changes.",
     {
@@ -103,7 +110,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("agent:read")) server.tool(
+  if (canUse("semfs_get_agent", "agent:read")) server.tool(
     "semfs_get_agent",
     "Retrieve an internal identity agent manifest with prompt, tools, policies, contracts, skills, specialists, and memory access.",
     { identity_id: z.string().default(container.config.defaultIdentityId), agent_id: z.string() },
@@ -113,7 +120,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("agent:prepare")) server.tool(
+  if (canUse("semfs_prepare_agent_action", "agent:prepare")) server.tool(
     "semfs_prepare_agent_action",
     "Prepare contract and prep for an outside runtime to act as an identity agent.",
     {
@@ -131,7 +138,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("agent:authorize")) server.tool(
+  if (canUse("semfs_authorize_agent_action", "agent:authorize")) server.tool(
     "semfs_authorize_agent_action",
     "Authorize a requested tool or action as a specific identity agent.",
     {
@@ -146,7 +153,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("agent:validate")) server.tool(
+  if (canUse("semfs_validate_agent_output", "agent:validate")) server.tool(
     "semfs_validate_agent_output",
     "Validate an agent output against its output contract, route policy, and facet policy.",
     {
@@ -160,7 +167,181 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("dream:prepare")) server.tool(
+  if (canUse("semfs_record_runtime_capabilities", "runtime:capability_write")) server.tool(
+    "semfs_record_runtime_capabilities",
+    "Record the runtime's observed execution capabilities for a specific conversation/run.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      conversation_id: z.string(),
+      run_id: z.string(),
+      runtime_capabilities: z.record(z.unknown()),
+      runtime_tools: z.array(z.string()).optional(),
+      notes: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.runtime.recordRuntimeCapabilities(mount, bundle, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_prepare_orchestration_run", "run:orchestrate")) server.tool(
+    "semfs_prepare_orchestration_run",
+    "Prepare an owner-aware orchestration run using a recorded runtime capability snapshot.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      conversation_id: z.string(),
+      run_id: z.string(),
+      owner_verified: z.boolean().optional(),
+      runtime_capabilities: z.record(z.unknown()).optional(),
+      runtime_tools: z.array(z.string()).optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.runtime.prepareOrchestrationRun(mount, bundle, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_prepare_subagent_run", "run:orchestrate")) server.tool(
+    "semfs_prepare_subagent_run",
+    "Prepare a scoped sub-agent run and return an ephemeral agent-runtime grant.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      conversation_id: z.string(),
+      run_id: z.string(),
+      agent_id: z.string(),
+      subagent_type: z.enum(["inline_subagent", "parallel_subagent", "continuation_subagent"]),
+      inbound_type: z.string(),
+      ttl_seconds: z.number(),
+      owner_verified: z.boolean().optional(),
+      request_direct_response: z.boolean().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.runtime.prepareSubagentRun(mount, bundle, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_record_agent_run_event", "run:record")) server.tool(
+    "semfs_record_agent_run_event",
+    "Record an audit event for a parent or sub-agent run.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      conversation_id: z.string(),
+      run_id: z.string(),
+      event_id: z.string().optional(),
+      agent_id: z.string().optional(),
+      event_type: z.string(),
+      details: z.record(z.unknown()).optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.runtime.recordAgentRunEvent(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_record_agent_run_result", "run:record")) server.tool(
+    "semfs_record_agent_run_result",
+    "Record a result for a parent or sub-agent run.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      conversation_id: z.string(),
+      run_id: z.string(),
+      result_id: z.string().optional(),
+      agent_id: z.string().optional(),
+      status: z.string(),
+      output: z.record(z.unknown()).optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.runtime.recordAgentRunResult(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_record_owner_context", "context:write")) server.tool(
+    "semfs_record_owner_context",
+    "Record owner-verified context as captured, non-activated identity maturation input.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      conversation_id: z.string(),
+      context_id: z.string().optional(),
+      summary: z.string(),
+      details: z.record(z.unknown()).optional(),
+      owner_verified: z.boolean().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.runtime.recordOwnerContext(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_record_inbound_context", "context:write")) server.tool(
+    "semfs_record_inbound_context",
+    "Record safe inbound context as captured, non-authoritative context.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      conversation_id: z.string(),
+      context_id: z.string().optional(),
+      summary: z.string(),
+      details: z.record(z.unknown()).optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.runtime.recordInboundContext(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_record_capability_gap", "evolution:write")) server.tool(
+    "semfs_record_capability_gap",
+    "Record a schema-backed capability gap without activating the missing capability.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      gap_id: z.string().optional(),
+      source_agent: z.string().optional(),
+      gap: z.string(),
+      blocked_action: z.string(),
+      safe_default: z.string(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.runtime.recordCapabilityGap(mount, bundle, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_create_capability_proposal", "evolution:write")) server.tool(
+    "semfs_create_capability_proposal",
+    "Create a schema-backed inactive capability proposal.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      proposal_id: z.string().optional(),
+      source_agent: z.string().optional(),
+      name: z.string(),
+      summary: z.string(),
+      activation_requirements: z.array(z.string()).optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.runtime.createCapabilityProposal(mount, bundle, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_link_approval_to_artifact", "approval:write")) server.tool(
+    "semfs_link_approval_to_artifact",
+    "Link an approval decision to the exact artifact reviewed without activating capability.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      link_id: z.string().optional(),
+      decision_id: z.string(),
+      artifact_ref: z.string(),
+      approval_status: z.string(),
+      note: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.runtime.linkApprovalToArtifact(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_prepare_dream", "dream:prepare")) server.tool(
     "semfs_prepare_dream",
     "Prepare a bounded autonomous maturation evaluation packet.",
     {
@@ -174,11 +355,11 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("dream:validate")) server.tool("semfs_validate_dream", "Validate dream findings before safe writeback.", { findings_json: z.string() }, async ({ findings_json }) =>
+  if (canUse("semfs_validate_dream", "dream:validate")) server.tool("semfs_validate_dream", "Validate dream findings before safe writeback.", { findings_json: z.string() }, async ({ findings_json }) =>
     text(container.dreams.validate(JSON.parse(findings_json)))
   );
 
-  if (has("dream:write")) server.tool(
+  if (canUse("semfs_write_safe_dream_outputs", "dream:write")) server.tool(
     "semfs_write_safe_dream_outputs",
     "Write validated safe dream findings as SemFS artifacts.",
     { identity_id: z.string().default(container.config.defaultIdentityId), findings_json: z.string() },
@@ -188,7 +369,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("memory:search")) server.tool(
+  if (canUse("semfs_get_memory_status", "memory:search")) server.tool(
     "semfs_get_memory_status",
     "Inspect SemFS memory backend configuration, durability, namespace policy, and privacy posture.",
     {
@@ -200,7 +381,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("memory:search")) server.tool(
+  if (canUse("semfs_vector_search", "memory:search")) server.tool(
     "semfs_vector_search",
     "Search policy-filtered SemFS vector summaries.",
     {
@@ -211,11 +392,12 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     },
     async ({ identity_id, ...rest }) => {
       const { bundle } = await load(identity_id);
+      container.auth.requireVectorNamespace(activePrincipal, rest.namespace);
       return text(await container.vectors.search(bundle, rest));
     }
   );
 
-  if (has("memory:write")) server.tool(
+  if (canUse("semfs_vector_upsert", "memory:write")) server.tool(
     "semfs_vector_upsert",
     "Write a policy-checked SemFS vector summary to an allowed namespace.",
     {
@@ -231,11 +413,12 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     },
     async ({ identity_id, ...rest }) => {
       const { bundle } = await load(identity_id);
+      container.auth.requireVectorNamespace(activePrincipal, rest.namespace);
       return text(await container.vectors.upsert(bundle, rest));
     }
   );
 
-  if (has("artifact:safe_write")) server.tool(
+  if (canUse("semfs_write_safe_artifact", "artifact:safe_write")) server.tool(
     "semfs_write_safe_artifact",
     "Write a safe SemFS artifact to an allowlisted path. This cannot write lifecycle, registry, dispatch, security, credential, or payment paths.",
     {
@@ -250,7 +433,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("review:write")) server.tool(
+  if (canUse("semfs_create_review_packet", "review:write")) server.tool(
     "semfs_create_review_packet",
     "Create a safe human/owner review packet artifact.",
     {
@@ -266,7 +449,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
-  if (has("approval:write")) server.tool(
+  if (canUse("semfs_capture_approval", "approval:write")) server.tool(
     "semfs_capture_approval",
     "Capture an owner or reviewer approval result without activating capabilities.",
     {

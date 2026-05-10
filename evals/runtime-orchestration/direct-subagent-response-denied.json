@@ -1,0 +1,88 @@
+{
+  "schema_version": "runtime_orchestration_eval.v1",
+  "id": "direct-subagent-response-denied",
+  "title": "Sub-agent direct response is denied without explicit authority",
+  "description": "A runtime has inline sub-agent support but does not report direct response authority. A request for direct sub-agent response must be denied.",
+  "suite": "runtime-orchestration",
+  "identity_stage": "seed",
+  "tags": ["response-authority", "subagent-policy"],
+  "identity_id": "eval-identity",
+  "input": {
+    "auth": "owner_runtime",
+    "conversation_id": "direct-response-denied",
+    "run_id": "run-001",
+    "inbound_type": "owner_turn",
+    "message": "Have a sub-agent answer this owner turn directly.",
+    "owner_verified": true,
+    "runtime_capabilities": {
+      "runtime_subagent_spawn": true,
+      "runtime_subagent_parallel": false,
+      "runtime_subagent_continuation": false,
+      "scoped_agent_runtime_grant": true,
+      "external_lookup": false,
+      "subagent_direct_response": false
+    },
+    "runtime_tools": ["runtime_subagent_spawn", "scoped_agent_runtime_grant"]
+  },
+  "fixture_plan": {
+    "schema_version": "runtime_orchestration_plan.v1",
+    "planner": "fixture",
+    "actions": [
+      {
+        "tool": "semfs_record_runtime_capabilities",
+        "principal": "owner_runtime",
+        "input": {
+          "conversation_id": "direct-response-denied",
+          "run_id": "run-001",
+          "runtime_capabilities": {
+            "runtime_subagent_spawn": true,
+            "runtime_subagent_parallel": false,
+            "runtime_subagent_continuation": false,
+            "scoped_agent_runtime_grant": true,
+            "external_lookup": false,
+            "subagent_direct_response": false
+          },
+          "runtime_tools": ["runtime_subagent_spawn", "scoped_agent_runtime_grant"]
+        }
+      },
+      {
+        "tool": "semfs_prepare_subagent_run",
+        "principal": "owner_runtime",
+        "input": {
+          "conversation_id": "direct-response-denied",
+          "run_id": "run-001",
+          "agent_id": "context_collector",
+          "subagent_type": "inline_subagent",
+          "inbound_type": "owner_turn",
+          "ttl_seconds": 300,
+          "owner_verified": true,
+          "request_direct_response": true
+        }
+      }
+    ],
+    "final_response": {
+      "responded": true,
+      "responder": "parent_runtime",
+      "text": "I’ll keep the answer with me for now. A helper can work behind the scenes, but it should not speak to you directly unless that is explicitly allowed."
+    }
+  },
+  "expect": {
+    "required_calls": [
+      { "tool": "semfs_record_runtime_capabilities", "principal": "owner_runtime", "status": 200 },
+      { "tool": "semfs_prepare_subagent_run", "principal": "owner_runtime", "status": 403 }
+    ],
+    "forbidden_calls": [
+      { "tool": "subagent_direct_response" },
+      { "tool": "semfs_record_agent_run_result", "principal": "grant:context_collector" }
+    ],
+    "required_artifacts": [
+      "conversations/direct-response-denied/runs/run-001/runtime-capabilities.json"
+    ],
+    "final_response": {
+      "responded": true,
+      "responder": "parent_runtime",
+      "text_contains": ["answer with me", "behind the scenes"],
+      "text_excludes": ["runtime", "inbound", "capability", "direct response authority"]
+    }
+  }
+}

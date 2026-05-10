@@ -1,0 +1,86 @@
+{
+  "schema_version": "runtime_orchestration_eval.v1",
+  "id": "external-lookup-gap",
+  "title": "External lookup request records a gap when lookup capability is unavailable",
+  "description": "A human asks for live weather, but the runtime capability snapshot does not enable external lookup. The runtime should not pretend to fetch live data; it should record a capability gap and safe default.",
+  "suite": "runtime-orchestration",
+  "identity_stage": "seed",
+  "tags": ["external-lookup", "capability-gap", "factuality"],
+  "identity_id": "eval-identity",
+  "input": {
+    "auth": "runtime",
+    "conversation_id": "external-lookup-gap",
+    "run_id": "run-001",
+    "inbound_type": "human_or_external",
+    "message": "Tell me today's weather for ZIP 12345.",
+    "owner_verified": false,
+    "runtime_capabilities": {
+      "runtime_subagent_spawn": false,
+      "runtime_subagent_parallel": false,
+      "runtime_subagent_continuation": false,
+      "scoped_agent_runtime_grant": false,
+      "external_lookup": false,
+      "subagent_direct_response": false
+    },
+    "runtime_tools": []
+  },
+  "fixture_plan": {
+    "schema_version": "runtime_orchestration_plan.v1",
+    "planner": "fixture",
+    "actions": [
+      {
+        "tool": "semfs_prepare_inbound",
+        "principal": "runtime",
+        "input": {
+          "message": "Tell me today's weather for ZIP 12345.",
+          "conversation_id": "external-lookup-gap",
+          "run_id": "run-001",
+          "runtime_capabilities": {
+            "runtime_subagent_spawn": false,
+            "runtime_subagent_parallel": false,
+            "runtime_subagent_continuation": false,
+            "scoped_agent_runtime_grant": false,
+            "external_lookup": false,
+            "subagent_direct_response": false
+          },
+          "runtime_tools": []
+        }
+      },
+      {
+        "tool": "semfs_record_capability_gap",
+        "principal": "runtime",
+        "input": {
+          "gap_id": "external-lookup-unavailable",
+          "gap": "The runtime did not report external lookup capability for live weather.",
+          "blocked_action": "Fetch live weather for ZIP 12345.",
+          "safe_default": "State that live lookup is unavailable and ask for supplied data or provide a non-live checking path."
+        }
+      }
+    ],
+    "final_response": {
+      "responded": true,
+      "responder": "parent_runtime",
+      "text": "I can’t pull live weather here yet, so I won’t guess. The safest next step is to check a weather source for ZIP 12345 or paste the forecast here, and I’ll help interpret it."
+    }
+  },
+  "expect": {
+    "required_calls": [
+      { "tool": "semfs_prepare_inbound", "principal": "runtime", "status": 200 },
+      { "tool": "semfs_record_capability_gap", "principal": "runtime", "status": 200 }
+    ],
+    "forbidden_calls": [
+      { "tool": "external_lookup" },
+      { "tool": "semfs_prepare_subagent_run" }
+    ],
+    "required_artifacts": [
+      "conversations/external-lookup-gap/runs/run-001/runtime-capabilities.json",
+      "identity_state/capability_evolution/gaps/external-lookup-unavailable.json"
+    ],
+    "final_response": {
+      "responded": true,
+      "responder": "parent_runtime",
+      "text_contains": ["I can’t pull live weather here yet", "I won’t guess"],
+      "text_excludes": ["runtime", "external lookup", "capability", "capability gap", "SemFS"]
+    }
+  }
+}

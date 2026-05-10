@@ -35,8 +35,9 @@ For a runtime/spec designer:
 5. `examples/prompt-rendering/README.md`
 6. `examples/runtime-simulations/README.md`
 7. `.runtime/tools/baseline-tools.md`
-8. `specs/semfs-upsert-model.md`
-9. `specs/seed-to-midstate-maturation-path.md`
+8. `specs/owner-context-to-semfs-ops.md`
+9. `specs/semfs-upsert-model.md`
+10. `specs/seed-to-midstate-maturation-path.md`
 
 ## Top-Level Folders
 

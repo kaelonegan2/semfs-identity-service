@@ -118,6 +118,62 @@
       "side_effect": "usage_event"
     },
     {
+      "id": "runtime_capability_snapshot_record",
+      "category": "semfs_runtime",
+      "status": "available_policy_limited",
+      "authority": "record_observed_runtime_capabilities_for_a_specific_run",
+      "allowed_agents": ["runtime_orchestration_planner"],
+      "side_effect": "safe_conversation_artifact_and_runtime_memory_summary"
+    },
+    {
+      "id": "subagent_run_prepare",
+      "category": "semfs_runtime",
+      "status": "available_policy_limited",
+      "authority": "prepare_scoped_inline_parallel_or_continuation_subagent_runs",
+      "allowed_agents": ["runtime_orchestration_planner"],
+      "side_effect": "ephemeral_agent_runtime_grant"
+    },
+    {
+      "id": "agent_run_event_record",
+      "category": "semfs_runtime",
+      "status": "available_policy_limited",
+      "authority": "record_agent_run_events_without_granting_new_authority",
+      "allowed_agents": [
+        "runtime_orchestration_planner",
+        "identity_evolution_manager",
+        "owner_onboarding",
+        "context_collector",
+        "business_research_planner",
+        "knowledge_drafter",
+        "capability_gap_manager",
+        "capability_proposal_writer",
+        "owner_review_coordinator",
+        "human_review",
+        "stop"
+      ],
+      "side_effect": "safe_conversation_artifact"
+    },
+    {
+      "id": "agent_run_result_record",
+      "category": "semfs_runtime",
+      "status": "available_policy_limited",
+      "authority": "record_agent_run_results_without_granting_new_authority",
+      "allowed_agents": [
+        "runtime_orchestration_planner",
+        "identity_evolution_manager",
+        "owner_onboarding",
+        "context_collector",
+        "business_research_planner",
+        "knowledge_drafter",
+        "capability_gap_manager",
+        "capability_proposal_writer",
+        "owner_review_coordinator",
+        "human_review",
+        "stop"
+      ],
+      "side_effect": "safe_conversation_artifact"
+    },
+    {
       "id": "human_review_packet_create",
       "category": "internal_runtime",
       "status": "available",

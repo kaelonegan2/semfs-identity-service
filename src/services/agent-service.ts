@@ -74,6 +74,7 @@ export class AgentService {
       ctx: {
         identity_id: bundle.identity_id,
         conversation_id: input.conversation_id ?? null,
+        run_id: input.run_id ?? null,
       },
       msg: {
         summary: input.message_summary ?? "unknown",
@@ -85,6 +86,7 @@ export class AgentService {
       orchestration: {
         stage: "agent_action",
         selected_agent: agentId,
+        run_id: input.run_id ?? null,
       },
       facets: input.facets ?? {},
       outbound: {},
@@ -111,6 +113,19 @@ export class AgentService {
       vector_context: {
         allowed_summaries: [],
       },
+      runtime_capabilities: {
+        snapshot_available: false,
+        reason: "No runtime capability snapshot was supplied to this agent preparation.",
+        capabilities: {
+          runtime_subagent_spawn: false,
+          runtime_subagent_parallel: false,
+          runtime_subagent_continuation: false,
+          scoped_agent_runtime_grant: false,
+          external_lookup: false,
+          subagent_direct_response: false,
+        },
+      },
+      subagent_policy: agent.subagent_policy ?? null,
       available_tools: this.policy.toolsForAgent(bundle, agentId).map((tool) => tool.id),
       output_contract: manifest.output_contract,
       prompt_guidance: {

@@ -26,6 +26,13 @@
       "capture_owner_approvals",
       "record_capability_gaps",
       "draft_capability_proposals",
+      "record_runtime_capability_snapshots",
+      "prepare_scoped_subagent_runs",
+      "support_inline_subagents",
+      "support_parallel_subagents",
+      "support_continuation_subagents_when_declared",
+      "issue_ephemeral_agent_runtime_grants",
+      "record_agent_run_events_and_results",
       "enforce_trust_and_authority_boundaries",
       "block_external_side_effects_without_approval"
     ]
@@ -50,6 +57,13 @@
     "approved_public_site_publishing",
     "advanced_specialist_orchestration",
     "eval_backed_capability_activation"
+  ],
+  "strict_runtime_rules": [
+    "missing_runtime_capability_snapshot_means_no_runtime_capability_is_available",
+    "missing_subagent_policy_means_agent_cannot_be_spawned",
+    "missing_continuation_capability_means_no_post_response_work",
+    "missing_response_authority_means_parent_reviewed_only",
+    "missing_operation_family_policy_means_operation_is_denied"
   ],
   "forbidden_contract_payloads": [
     "full_identity_repo",

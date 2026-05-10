@@ -1,5 +1,16 @@
-import { AuthPrincipal, AuthScope } from "../types/core.js";
+import { AgentRuntimeGrant, AuthPrincipal, AuthScope } from "../types/core.js";
 import { forbidden } from "../utils/errors.js";
+
+const TOOL_OPERATION_FAMILY: Record<string, string> = {
+  semfs_record_owner_context: "capture",
+  semfs_record_inbound_context: "capture",
+  semfs_vector_upsert: "capture",
+  semfs_write_safe_artifact: "capture",
+  semfs_record_capability_gap: "capture",
+  semfs_create_capability_proposal: "review",
+  semfs_create_review_packet: "review",
+  semfs_link_approval_to_artifact: "review",
+};
 
 export const ADMIN_SCOPES: AuthScope[] = [
   "identity:status",
@@ -11,9 +22,14 @@ export const ADMIN_SCOPES: AuthScope[] = [
   "agent:authorize",
   "agent:validate",
   "run:prepare",
+  "run:orchestrate",
+  "run:record",
+  "runtime:capability_write",
   "memory:search",
   "memory:write",
   "artifact:safe_write",
+  "context:write",
+  "evolution:write",
   "review:write",
   "approval:write",
   "dream:prepare",
@@ -30,9 +46,14 @@ export const RUNTIME_SCOPES: AuthScope[] = [
   "agent:authorize",
   "agent:validate",
   "run:prepare",
+  "run:orchestrate",
+  "run:record",
+  "runtime:capability_write",
   "memory:search",
   "memory:write",
   "artifact:safe_write",
+  "context:write",
+  "evolution:write",
   "review:write",
   "dream:prepare",
   "dream:validate",
@@ -46,14 +67,35 @@ export const READONLY_SCOPES: AuthScope[] = ["identity:status", "identity:read",
 export const PUBLIC_SCOPES: AuthScope[] = ["identity:status"];
 
 export class AuthService {
+  private readonly agentRuntimeTokens = new Map<string, AuthPrincipal>();
+
   constructor(
     private readonly principals: AuthPrincipal[],
     private readonly allowPublicAccess: boolean
   ) {}
 
+  registerAgentRuntimeGrant(token: string, grant: AgentRuntimeGrant): AuthPrincipal {
+    const principal: AuthPrincipal = {
+      id: `agent-runtime:${grant.grantId}`,
+      tokenClass: "agent_runtime",
+      scopes: grant.scopes,
+      token,
+      agentRuntimeGrant: grant,
+    };
+    this.agentRuntimeTokens.set(token, principal);
+    return this.redact(principal);
+  }
+
   authenticate(authorization: string | undefined): AuthPrincipal | null {
     const token = authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length) : undefined;
     if (token) {
+      const grantPrincipal = this.agentRuntimeTokens.get(token);
+      if (grantPrincipal) {
+        const expiresAt = Date.parse(grantPrincipal.agentRuntimeGrant?.expiresAt ?? "");
+        if (Number.isFinite(expiresAt) && expiresAt > Date.now()) return this.redact(grantPrincipal);
+        this.agentRuntimeTokens.delete(token);
+        return null;
+      }
       const principal = this.principals.find((candidate) => candidate.token === token);
       if (principal) return this.redact(principal);
     }
@@ -76,6 +118,51 @@ export class AuthService {
     }
   }
 
+  canUseTool(principal: AuthPrincipal, toolName: string): boolean {
+    if (principal.tokenClass !== "agent_runtime") return true;
+    const grant = principal.agentRuntimeGrant;
+    if (!grant?.allowedTools.includes(toolName)) return false;
+    const operationFamily = TOOL_OPERATION_FAMILY[toolName];
+    return !operationFamily || grant.allowedOperationFamilies.includes(operationFamily);
+  }
+
+  requireTool(principal: AuthPrincipal, toolName: string): void {
+    if (!this.canUseTool(principal, toolName)) {
+      throw forbidden("Scoped agent runtime grant does not allow this SemFS tool", {
+        tool: toolName,
+        grant: this.publicGrant(principal.agentRuntimeGrant),
+      });
+    }
+  }
+
+  requireVectorNamespace(principal: AuthPrincipal, namespace: string): void {
+    if (principal.tokenClass !== "agent_runtime") return;
+    const allowed = principal.agentRuntimeGrant?.allowedVectorNamespaces ?? [];
+    if (!allowed.includes(namespace)) {
+      throw forbidden("Scoped agent runtime grant does not allow this vector namespace", {
+        namespace,
+        grant: this.publicGrant(principal.agentRuntimeGrant),
+      });
+    }
+  }
+
+  requireRunScope(principal: AuthPrincipal, conversationId: string, runId?: string): void {
+    if (principal.tokenClass !== "agent_runtime") return;
+    const grant = principal.agentRuntimeGrant;
+    if (!grant || grant.conversationId !== conversationId) {
+      throw forbidden("Scoped agent runtime grant does not allow this conversation", {
+        conversation_id: conversationId,
+        grant: this.publicGrant(grant),
+      });
+    }
+    if (runId && runId !== grant.runId && runId !== grant.parentRunId && !runId.startsWith(`${grant.parentRunId}-`)) {
+      throw forbidden("Scoped agent runtime grant does not allow this run", {
+        run_id: runId,
+        grant: this.publicGrant(grant),
+      });
+    }
+  }
+
   context(principal: AuthPrincipal): Record<string, unknown> {
     const tokenClass = principal.tokenClass;
     const ownerVerifiedByCredential = tokenClass === "owner_runtime";
@@ -92,7 +179,9 @@ export class AuthService {
               ? "runtime"
               : tokenClass === "readonly"
                 ? "readonly"
-                : "public",
+                : tokenClass === "agent_runtime"
+                  ? "agent_runtime"
+                  : "public",
       owner_capable_credential: ownerCapable,
       owner_verified_by_credential: ownerVerifiedByCredential,
       inbound_preparation_available: this.hasScope(principal, "inbound:prepare"),
@@ -101,12 +190,15 @@ export class AuthService {
           ? "Credential can administer SemFS. It is not owner verification for an inbound user unless runtime context also says so."
           : tokenClass === "owner_runtime"
             ? "Credential represents an owner-authorized runtime. Do not ask for separate owner verification unless a specific identity policy or approval step requires it."
-            : tokenClass === "runtime"
-              ? "Credential represents an expected trusted runtime, not owner authority."
-              : tokenClass === "readonly"
-                ? "Credential can inspect identity state but should not write or take authority-bearing actions."
+          : tokenClass === "runtime"
+            ? "Credential represents an expected trusted runtime, not owner authority."
+            : tokenClass === "readonly"
+              ? "Credential can inspect identity state but should not write or take authority-bearing actions."
+              : tokenClass === "agent_runtime"
+                ? "Credential is an ephemeral scoped agent runtime grant. It may use only the SemFS tools, operation families, and namespaces granted for this run."
                 : "Public access: expose only public-safe behavior.",
       scopes: principal.scopes,
+      agent_runtime_grant: this.publicGrant(principal.agentRuntimeGrant),
     };
   }
 
@@ -129,5 +221,23 @@ export class AuthService {
   private redact(principal: AuthPrincipal): AuthPrincipal {
     const { token: _token, ...safe } = principal;
     return safe;
+  }
+
+  private publicGrant(grant: AgentRuntimeGrant | undefined): Record<string, unknown> | null {
+    if (!grant) return null;
+    return {
+      grant_id: grant.grantId,
+      run_id: grant.runId,
+      parent_run_id: grant.parentRunId,
+      conversation_id: grant.conversationId,
+      agent_id: grant.agentId,
+      subagent_type: grant.subagentType,
+      expires_at: grant.expiresAt,
+      allowed_tools: grant.allowedTools,
+      allowed_operation_families: grant.allowedOperationFamilies,
+      allowed_vector_namespaces: grant.allowedVectorNamespaces,
+      response_authority: grant.responseAuthority,
+      owner_verified: grant.ownerVerified,
+    };
   }
 }

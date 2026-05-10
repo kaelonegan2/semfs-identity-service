@@ -7,6 +7,7 @@ import { IdentityLoader } from "./identity-loader.js";
 import { IdentityProfileService } from "./identity-profile-service.js";
 import { InboundService } from "./inbound-service.js";
 import { PolicyService } from "./policy-service.js";
+import { RuntimeOrchestrationService } from "./runtime-orchestration-service.js";
 import { SafeWriter } from "./safe-writer.js";
 import { SeedTemplateService } from "./seed-template-service.js";
 import { VectorService } from "./vector-service.js";
@@ -17,19 +18,23 @@ export function createContainer() {
   const loader = new IdentityLoader();
   const policy = new PolicyService();
   const writer = new SafeWriter();
+  const auth = new AuthService(config.authPrincipals, config.allowPublicAccess);
+  const vectors = new VectorService(config);
+  const runtime = new RuntimeOrchestrationService(policy, writer, vectors, auth);
   return {
     config,
-    auth: new AuthService(config.authPrincipals, config.allowPublicAccess),
+    auth,
     registry,
     loader,
     identityProfile: new IdentityProfileService(),
-    inbound: new InboundService(loader, policy),
+    inbound: new InboundService(loader, policy, runtime),
     policy,
     writer,
     agents: new AgentService(policy),
     dreams: new DreamService(writer),
     seedTemplates: new SeedTemplateService(registry),
-    vectors: new VectorService(config),
+    vectors,
+    runtime,
   };
 }
 

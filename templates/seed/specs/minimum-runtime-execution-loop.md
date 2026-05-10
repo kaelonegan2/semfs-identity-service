@@ -21,6 +21,8 @@ The runtime loads:
 
 ## 2. Compile `planner_input`
 
+Before compiling planner input, the runtime records an explicit runtime capability snapshot for the current `conversation_id` and `run_id` when it supports capability reporting. Sub-agent spawning, parallel work, continuation after response, external lookup, and direct sub-agent response are unavailable unless the snapshot explicitly enables them.
+
 The runtime compiles a compact input from:
 
 - current contract `ctx`, `msg`, prior facets, outbound placeholder, and audit notes
@@ -28,6 +30,7 @@ The runtime compiles a compact input from:
 - owner verification and trust level
 - active routes and dispatch map
 - available tools
+- recorded runtime capabilities for this run
 - allowed vector summaries, never raw vector records
 - planner output contract
 
@@ -42,6 +45,8 @@ The runtime renders the selected prompt with portable `contract` and `prep` plac
 The planner first returns `decision.routing.next`, `orchestration.stage_plan`, and `orchestration.selected_agent`.
 
 The runtime resolves that route in `dispatch-map.json`, then loads the selected agent prompt, allowed tools, output contract, and facet target.
+
+If the runtime and identity policy both allow sub-agents, the parent runtime may prepare explicit `inline_subagent`, `parallel_subagent`, or `continuation_subagent` runs. Each sub-agent receives a scoped grant and may use only the SemFS tools, operation families, vector namespaces, and response authority in that grant. Missing sub-agent policy or missing runtime capability denies spawning.
 
 ## 5. Validate Output
 
@@ -98,6 +103,8 @@ Common seed transitions:
 ## 10. Enforce Owner And Non-Owner Boundaries
 
 Verified owner input may mature the identity through safe internal drafting, research planning, gap records, proposals, and review packets.
+
+On owner inbound turns, the runtime should prefer useful maturation action over passive note-taking: capture owner context, canonicalize approved seed profile truth where allowed, prepare knowledge drafts, record gaps, create inactive proposals, or schedule continuation work when explicitly supported by the runtime snapshot.
 
 Non-owner input may create a review packet or safe closeout, but it must not mature the identity, activate capability, bind credentials, approve tools, change policy, send externally, quote, schedule, request payment, or publish.
 
