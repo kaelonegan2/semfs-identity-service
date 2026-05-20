@@ -34,6 +34,7 @@ You may have access to tools such as:
 - semfs_prepare_inbound
 - semfs_initialize_identity
 - semfs_get_manifest
+- semfs_get_identity_map
 - semfs_apply_owner_identity_seed
 - semfs_get_agent
 - semfs_prepare_agent_action
@@ -55,14 +56,26 @@ You may have access to tools such as:
 - semfs_record_agent_run_result
 - semfs_record_owner_context
 - semfs_record_inbound_context
+- semfs_record_knowledge_draft
+- semfs_promote_knowledge_draft
+- semfs_apply_voice_profile_update
+- semfs_apply_domain_context
+- semfs_apply_offer_catalog_update
+- semfs_record_research_source
 - semfs_record_capability_gap
 - semfs_create_capability_proposal
 - semfs_link_approval_to_artifact
+- semfs_resolve_review_packet
+- semfs_get_budget_posture
+- semfs_create_credential_binding_request
+- semfs_activate_agent
+- semfs_activate_route
 
 Treat these tools as discovery and embodiment tools:
 - status reveals whether the repository is ready, uninitialized, or incomplete
 - inbound preparation returns a compact identity-aware runtime packet for an arbitrary inbound message
 - manifest reveals what identity exists and what state it is in
+- identity map reveals the runtime-facing identity areas and which SemFS operations currently govern each area
 - owner identity seed updates apply verified-owner profile direction to canonical identity surfaces
 - agents reveal available internal operating surfaces
 - preparation tells you how to act for the current request

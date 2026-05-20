@@ -88,6 +88,16 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
+  if (canUse("semfs_get_identity_map", "identity:read")) server.tool(
+    "semfs_get_identity_map",
+    "Read identity-map traversal guidance and SemFS operation coverage for each identity area.",
+    { identity_id: z.string().default(container.config.defaultIdentityId) },
+    async ({ identity_id }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text({ mount: { identity_id: mount.identityId, store: mount.store.label }, identity_map: container.loader.identityMap(bundle) });
+    }
+  );
+
   if (canUseAny("semfs_apply_owner_identity_seed", ["identity:profile_write", "identity:seed_update"])) server.tool(
     "semfs_apply_owner_identity_seed",
     "Apply verified-owner seed identity direction to canonical profile, brief, README, and status surfaces. This does not activate capabilities, external actions, credentials, payments, publishing, or lifecycle changes.",
@@ -107,6 +117,57 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     async ({ identity_id, ...rest }) => {
       const mount = container.registry.resolve(identity_id);
       return text(await container.identityProfile.applyOwnerIdentitySeed(mount, activePrincipal, rest));
+    }
+  );
+
+  if (canUse("semfs_apply_voice_profile_update", "identity:profile_write")) server.tool(
+    "semfs_apply_voice_profile_update",
+    "Apply an owner-approved voice, tone, and style update without activating capabilities.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      voice_summary: z.string(),
+      tone: z.array(z.string()).optional(),
+      style_guidance: z.array(z.string()).optional(),
+      avoid: z.array(z.string()).optional(),
+      approval_ref: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const mount = container.registry.resolve(identity_id);
+      return text(await container.maturation.applyVoiceProfileUpdate(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_apply_domain_context", "identity:profile_write")) server.tool(
+    "semfs_apply_domain_context",
+    "Apply owner-approved domain, audience, and operating-area context.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      business_or_function_domain: z.string(),
+      audience_or_market: z.string().optional(),
+      operating_area: z.string().optional(),
+      domain_summary: z.string().optional(),
+      approval_ref: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const mount = container.registry.resolve(identity_id);
+      return text(await container.maturation.applyDomainContext(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_apply_offer_catalog_update", "identity:profile_write")) server.tool(
+    "semfs_apply_offer_catalog_update",
+    "Apply an owner-approved offer or service catalog without creating pricing or scheduling authority.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      catalog_id: z.string().optional(),
+      offers: z.array(z.string()),
+      pricing_posture: z.string().optional(),
+      authority_notes: z.string().optional(),
+      approval_ref: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const mount = container.registry.resolve(identity_id);
+      return text(await container.maturation.applyOfferCatalogUpdate(mount, rest, activePrincipal));
     }
   );
 
@@ -338,6 +399,156 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     async ({ identity_id, ...rest }) => {
       const { mount } = await load(identity_id);
       return text(await container.runtime.linkApprovalToArtifact(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_record_knowledge_draft", "context:write")) server.tool(
+    "semfs_record_knowledge_draft",
+    "Record a draft knowledge item for later review; this does not make it authoritative.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      draft_id: z.string().optional(),
+      title: z.string(),
+      summary: z.string(),
+      items: z.array(z.string()).optional(),
+      source_basis: z.array(z.string()).optional(),
+      review_questions: z.array(z.string()).optional(),
+      safe_default: z.string().optional(),
+      source_agent: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.maturation.recordKnowledgeDraft(mount, bundle, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_promote_knowledge_draft", "approval:write")) server.tool(
+    "semfs_promote_knowledge_draft",
+    "Promote a reviewed knowledge draft into canonical approved knowledge.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      draft_id: z.string(),
+      knowledge_id: z.string().optional(),
+      approval_ref: z.string(),
+      approved_by_role: z.string().optional(),
+      source_agent: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.maturation.promoteKnowledgeDraft(mount, bundle, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_record_research_source", "context:write")) server.tool(
+    "semfs_record_research_source",
+    "Record a source-backed research note without treating it as final identity truth.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      source_id: z.string().optional(),
+      title: z.string(),
+      url: z.string().optional(),
+      summary: z.string(),
+      confidence: z.string().optional(),
+      relevance: z.string().optional(),
+      review_status: z.string().optional(),
+      source_agent: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.maturation.recordResearchSource(mount, bundle, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_resolve_review_packet", "approval:write")) server.tool(
+    "semfs_resolve_review_packet",
+    "Resolve a review packet with a decision, without implicitly activating capability.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      resolution_id: z.string().optional(),
+      review_packet_ref: z.string(),
+      decision: z.string(),
+      reviewer: z.string().optional(),
+      summary: z.string().optional(),
+      allowed_next_operations: z.array(z.string()).optional(),
+      blocked_operations: z.array(z.string()).optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.maturation.resolveReviewPacket(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_get_budget_posture", "governance:read")) server.tool(
+    "semfs_get_budget_posture",
+    "Evaluate current usage against identity governance budget thresholds.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      usage: z.record(z.unknown()).optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.maturation.getBudgetPosture(mount, rest));
+    }
+  );
+
+  if (canUse("semfs_create_credential_binding_request", "review:write")) server.tool(
+    "semfs_create_credential_binding_request",
+    "Create a non-secret credential binding request for owner review.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      request_id: z.string().optional(),
+      capability: z.string(),
+      credential_alias: z.string(),
+      requested_scopes: z.array(z.string()).optional(),
+      risk: z.string().optional(),
+      source_agent: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount } = await load(identity_id);
+      return text(await container.maturation.createCredentialBindingRequest(mount, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_activate_agent", "activation:write")) server.tool(
+    "semfs_activate_agent",
+    "Activate an approved agent in the canonical registry after dependency checks.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      agent_id: z.string(),
+      approval_ref: z.string(),
+      proposal_id: z.string().optional(),
+      prompt_ref: z.string().optional(),
+      output_contract: z.string().optional(),
+      facet_target: z.string().optional(),
+      tools: z.array(z.string()).optional(),
+      authority_limits: z.array(z.string()).optional(),
+      eval_refs: z.array(z.string()).optional(),
+      runtime_availability: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.maturation.activateAgent(mount, bundle, rest, activePrincipal));
+    }
+  );
+
+  if (canUse("semfs_activate_route", "activation:write")) server.tool(
+    "semfs_activate_route",
+    "Activate an approved dispatch route after its agent is active.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      route: z.string(),
+      agent_id: z.string(),
+      approval_ref: z.string(),
+      proposal_id: z.string().optional(),
+      output_contract: z.string().optional(),
+      facet_target: z.string().optional(),
+      trust_required: z.string().optional(),
+      eval_refs: z.array(z.string()).optional(),
+      runtime_availability: z.string().optional(),
+    },
+    async ({ identity_id, ...rest }) => {
+      const { mount, bundle } = await load(identity_id);
+      return text(await container.maturation.activateRoute(mount, bundle, rest, activePrincipal));
     }
   );
 

@@ -69,6 +69,12 @@ export async function createApp(container: SemfsContainer, options: { logger?: b
     return { mount: { identity_id: mount.identityId, store: mount.store.label }, manifest: container.loader.manifest(bundle) };
   });
 
+  app.get("/v1/identities/:identity_id/map", async (request) => {
+    requireScope(container, request, "identity:read", "semfs_get_identity_map");
+    const { mount, bundle } = await loadIdentity(container, request);
+    return { mount: { identity_id: mount.identityId, store: mount.store.label }, identity_map: container.loader.identityMap(bundle) };
+  });
+
   app.get("/v1/identities/:identity_id/context", async (request) => {
     requireScope(container, request, "identity:read", "semfs_get_manifest");
     const { bundle } = await loadIdentity(container, request);
@@ -93,6 +99,24 @@ export async function createApp(container: SemfsContainer, options: { logger?: b
     requireAnyScope(container, request, ["identity:profile_write", "identity:seed_update"], "semfs_apply_owner_identity_seed");
     const mount = container.registry.resolve((request.params as Params).identity_id);
     return container.identityProfile.applyOwnerIdentitySeed(mount, authPrincipal(request), (request.body ?? {}) as Record<string, unknown>);
+  });
+
+  app.post("/v1/identities/:identity_id/profile/voice", async (request) => {
+    requireScope(container, request, "identity:profile_write", "semfs_apply_voice_profile_update");
+    const mount = container.registry.resolve((request.params as Params).identity_id);
+    return container.maturation.applyVoiceProfileUpdate(mount, (request.body ?? {}) as Record<string, unknown>, authPrincipal(request));
+  });
+
+  app.post("/v1/identities/:identity_id/profile/domain", async (request) => {
+    requireScope(container, request, "identity:profile_write", "semfs_apply_domain_context");
+    const mount = container.registry.resolve((request.params as Params).identity_id);
+    return container.maturation.applyDomainContext(mount, (request.body ?? {}) as Record<string, unknown>, authPrincipal(request));
+  });
+
+  app.post("/v1/identities/:identity_id/offers/catalog", async (request) => {
+    requireScope(container, request, "identity:profile_write", "semfs_apply_offer_catalog_update");
+    const mount = container.registry.resolve((request.params as Params).identity_id);
+    return container.maturation.applyOfferCatalogUpdate(mount, (request.body ?? {}) as Record<string, unknown>, authPrincipal(request));
   });
 
   app.get("/v1/identities/:identity_id/agents", async (request) => {
@@ -217,6 +241,69 @@ export async function createApp(container: SemfsContainer, options: { logger?: b
     requireScope(container, request, "approval:write", "semfs_link_approval_to_artifact");
     const { mount } = await loadIdentity(container, request);
     return container.runtime.linkApprovalToArtifact(mount, (request.body ?? {}) as Record<string, unknown>, authPrincipal(request));
+  });
+
+  app.post("/v1/identities/:identity_id/knowledge/drafts", async (request) => {
+    requireScope(container, request, "context:write", "semfs_record_knowledge_draft");
+    const { mount, bundle } = await loadIdentity(container, request);
+    return container.maturation.recordKnowledgeDraft(mount, bundle, (request.body ?? {}) as Record<string, unknown>, authPrincipal(request));
+  });
+
+  app.post("/v1/identities/:identity_id/knowledge/drafts/:draft_id/promote", async (request) => {
+    requireScope(container, request, "approval:write", "semfs_promote_knowledge_draft");
+    const { mount, bundle } = await loadIdentity(container, request);
+    return container.maturation.promoteKnowledgeDraft(
+      mount,
+      bundle,
+      { ...((request.body ?? {}) as Record<string, unknown>), draft_id: (request.params as Params).draft_id },
+      authPrincipal(request)
+    );
+  });
+
+  app.post("/v1/identities/:identity_id/research/sources", async (request) => {
+    requireScope(container, request, "context:write", "semfs_record_research_source");
+    const { mount, bundle } = await loadIdentity(container, request);
+    return container.maturation.recordResearchSource(mount, bundle, (request.body ?? {}) as Record<string, unknown>, authPrincipal(request));
+  });
+
+  app.post("/v1/identities/:identity_id/review-packets/resolve", async (request) => {
+    requireScope(container, request, "approval:write", "semfs_resolve_review_packet");
+    const { mount } = await loadIdentity(container, request);
+    return container.maturation.resolveReviewPacket(mount, (request.body ?? {}) as Record<string, unknown>, authPrincipal(request));
+  });
+
+  app.post("/v1/identities/:identity_id/governance/budget-posture", async (request) => {
+    requireScope(container, request, "governance:read", "semfs_get_budget_posture");
+    const { mount } = await loadIdentity(container, request);
+    return container.maturation.getBudgetPosture(mount, (request.body ?? {}) as Record<string, unknown>);
+  });
+
+  app.post("/v1/identities/:identity_id/security/credential-binding-requests", async (request) => {
+    requireScope(container, request, "review:write", "semfs_create_credential_binding_request");
+    const { mount } = await loadIdentity(container, request);
+    return container.maturation.createCredentialBindingRequest(mount, (request.body ?? {}) as Record<string, unknown>, authPrincipal(request));
+  });
+
+  app.post("/v1/identities/:identity_id/agents/:agent_id/activate", async (request) => {
+    requireScope(container, request, "activation:write", "semfs_activate_agent");
+    const { mount, bundle } = await loadIdentity(container, request);
+    return container.maturation.activateAgent(
+      mount,
+      bundle,
+      { ...((request.body ?? {}) as Record<string, unknown>), agent_id: (request.params as Params).agent_id },
+      authPrincipal(request)
+    );
+  });
+
+  app.post("/v1/identities/:identity_id/routes/:route/activate", async (request) => {
+    requireScope(container, request, "activation:write", "semfs_activate_route");
+    const { mount, bundle } = await loadIdentity(container, request);
+    return container.maturation.activateRoute(
+      mount,
+      bundle,
+      { ...((request.body ?? {}) as Record<string, unknown>), route: (request.params as Params).route },
+      authPrincipal(request)
+    );
   });
 
   app.post("/v1/identities/:identity_id/vector/upsert", async (request) => {

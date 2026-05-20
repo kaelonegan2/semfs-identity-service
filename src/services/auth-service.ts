@@ -4,12 +4,22 @@ import { forbidden } from "../utils/errors.js";
 const TOOL_OPERATION_FAMILY: Record<string, string> = {
   semfs_record_owner_context: "capture",
   semfs_record_inbound_context: "capture",
+  semfs_record_knowledge_draft: "capture",
+  semfs_record_research_source: "capture",
   semfs_vector_upsert: "capture",
   semfs_write_safe_artifact: "capture",
   semfs_record_capability_gap: "capture",
   semfs_create_capability_proposal: "review",
   semfs_create_review_packet: "review",
   semfs_link_approval_to_artifact: "review",
+  semfs_promote_knowledge_draft: "review",
+  semfs_resolve_review_packet: "review",
+  semfs_create_credential_binding_request: "review",
+  semfs_apply_voice_profile_update: "canonicalize",
+  semfs_apply_domain_context: "canonicalize",
+  semfs_apply_offer_catalog_update: "canonicalize",
+  semfs_activate_agent: "activate",
+  semfs_activate_route: "activate",
 };
 
 export const ADMIN_SCOPES: AuthScope[] = [
@@ -27,9 +37,11 @@ export const ADMIN_SCOPES: AuthScope[] = [
   "runtime:capability_write",
   "memory:search",
   "memory:write",
+  "governance:read",
   "artifact:safe_write",
   "context:write",
   "evolution:write",
+  "activation:write",
   "review:write",
   "approval:write",
   "dream:prepare",
@@ -51,6 +63,7 @@ export const RUNTIME_SCOPES: AuthScope[] = [
   "runtime:capability_write",
   "memory:search",
   "memory:write",
+  "governance:read",
   "artifact:safe_write",
   "context:write",
   "evolution:write",
@@ -60,9 +73,9 @@ export const RUNTIME_SCOPES: AuthScope[] = [
   "dream:write",
 ];
 
-export const OWNER_RUNTIME_SCOPES: AuthScope[] = ["identity:profile_write", "identity:seed_update", ...RUNTIME_SCOPES, "approval:write"];
+export const OWNER_RUNTIME_SCOPES: AuthScope[] = ["identity:profile_write", "identity:seed_update", "activation:write", ...RUNTIME_SCOPES, "approval:write"];
 
-export const READONLY_SCOPES: AuthScope[] = ["identity:status", "identity:read", "inbound:prepare", "agent:read", "memory:search"];
+export const READONLY_SCOPES: AuthScope[] = ["identity:status", "identity:read", "inbound:prepare", "agent:read", "memory:search", "governance:read"];
 
 export const PUBLIC_SCOPES: AuthScope[] = ["identity:status"];
 

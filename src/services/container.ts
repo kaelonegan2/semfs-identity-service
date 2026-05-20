@@ -4,6 +4,7 @@ import { AgentService } from "./agent-service.js";
 import { AuthService } from "./auth-service.js";
 import { DreamService } from "./dream-service.js";
 import { IdentityLoader } from "./identity-loader.js";
+import { IdentityMaturationService } from "./identity-maturation-service.js";
 import { IdentityProfileService } from "./identity-profile-service.js";
 import { InboundService } from "./inbound-service.js";
 import { PolicyService } from "./policy-service.js";
@@ -26,6 +27,7 @@ export function createContainer() {
     auth,
     registry,
     loader,
+    maturation: new IdentityMaturationService(auth, vectors),
     identityProfile: new IdentityProfileService(),
     inbound: new InboundService(loader, policy, runtime),
     policy,

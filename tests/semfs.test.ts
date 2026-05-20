@@ -79,10 +79,13 @@ describe("SemFS service", () => {
 
     const bundle = await container.loader.load(mount);
     const manifest = container.loader.manifest(bundle);
+    const identityMap = container.loader.identityMap(bundle);
 
     expect(bundle.identity_id).toBe("test-identity");
     expect(manifest.canonical_dispatch_map).toBe("identity_state/orchestration/dispatch-map.json");
     expect((manifest.active_routes as string[])).toContain("owner_onboarding");
+    expect(identityMap.schema_version).toBe("identity_map_coverage.v1");
+    expect((identityMap.recommended_next_functions as string[])).toContain("semfs_apply_reviewed_context");
   });
 
   it("retrieves agents and enforces tool permissions", async () => {
@@ -555,6 +558,130 @@ describe("SemFS service", () => {
     expect(proposalFile.activation_performed).toBe(false);
   });
 
+  it("supports targeted identity maturation operations with scoped auth", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_OWNER_RUNTIME_AUTH_TOKEN = "owner-runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const app = await createApp(container);
+
+    const draft = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/knowledge/drafts",
+      headers: { authorization: "Bearer test-token" },
+      payload: { draft_id: "faq-001", title: "Service FAQ", summary: "Draft answer for common service questions.", items: ["We can draft service answers after review."] },
+    });
+    expect(draft.statusCode).toBe(200);
+    expect(draft.json().draft.promotion_state).toBe("draft");
+
+    const promoteDenied = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/knowledge/drafts/faq-001/promote",
+      headers: { authorization: "Bearer test-token" },
+      payload: { approval_ref: "approval-001" },
+    });
+    expect(promoteDenied.statusCode).toBe(403);
+
+    const promoted = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/knowledge/drafts/faq-001/promote",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: { approval_ref: "approval-001" },
+    });
+    expect(promoted.statusCode).toBe(200);
+    expect(promoted.json().knowledge.promotion_state).toBe("canonical");
+
+    const voiceDenied = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/profile/voice",
+      headers: { authorization: "Bearer test-token" },
+      payload: { voice_summary: "Plain, warm, direct." },
+    });
+    expect(voiceDenied.statusCode).toBe(403);
+
+    const voice = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/profile/voice",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: { voice_summary: "Plain, warm, direct.", tone: ["plain", "warm"], style_guidance: ["Prefer concrete next steps."] },
+    });
+    expect(voice.statusCode).toBe(200);
+    expect(voice.json().profile.voice_summary).toBe("Plain, warm, direct.");
+
+    const domain = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/profile/domain",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: { business_or_function_domain: "Residential landscaping", audience_or_market: "Homeowners", operating_area: "Portland area" },
+    });
+    expect(domain.statusCode).toBe(200);
+    expect(domain.json().profile.business_or_function_domain).toBe("Residential landscaping");
+
+    const offers = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/offers/catalog",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: { offers: ["Seasonal cleanup", "Planting refresh"], pricing_posture: "Estimate-only until approved." },
+    });
+    expect(offers.statusCode).toBe(200);
+    expect(offers.json().catalog.offers).toContain("Seasonal cleanup");
+
+    const research = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/research/sources",
+      headers: { authorization: "Bearer test-token" },
+      payload: { source_id: "source-001", title: "Research note", summary: "Common seasonal landscaping needs.", confidence: "draft" },
+    });
+    expect(research.statusCode).toBe(200);
+    expect(research.json().source.review_status).toBe("needs_review");
+
+    const budget = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/governance/budget-posture",
+      headers: { authorization: "Bearer test-token" },
+      payload: { usage: { model_calls: 15, estimated_cost_usd: 9 } },
+    });
+    expect(budget.statusCode).toBe(200);
+    expect(budget.json().posture).toBe("requires_approval");
+
+    const credential = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/security/credential-binding-requests",
+      headers: { authorization: "Bearer test-token" },
+      payload: { capability: "Email draft sending", credential_alias: "owner-email", requested_scopes: ["send_draft"] },
+    });
+    expect(credential.statusCode).toBe(200);
+    expect(credential.json().request.secret_storage).toBe("not_in_identity_repo");
+
+    const resolved = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/review-packets/resolve",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: { review_packet_ref: "conversations/test/artifacts/human-review-packet.md", decision: "approved", allowed_next_operations: ["semfs_activate_route"] },
+    });
+    expect(resolved.statusCode).toBe(200);
+    expect(resolved.json().resolution.activation_performed).toBe(false);
+
+    const activatedAgent = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/agents/owner_onboarding/activate",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: { approval_ref: "approval-activate-agent", proposal_id: "existing-agent" },
+    });
+    expect(activatedAgent.statusCode).toBe(200);
+    expect(activatedAgent.json().agent.status).toBe("active");
+
+    const activatedRoute = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/routes/owner_followup/activate",
+      headers: { authorization: "Bearer owner-runtime-token" },
+      payload: { agent_id: "owner_onboarding", approval_ref: "approval-activate-route", output_contract: "owner_onboarding", facet_target: "owner_onboarding" },
+    });
+    expect(activatedRoute.statusCode).toBe(200);
+    expect(activatedRoute.json().route_info.agent_id).toBe("owner_onboarding");
+  });
+
   it("prepares dream packets and rejects activation-like findings", async () => {
     const root = await tempIdentityRoot();
     process.env.SEMFS_IDENTITY_PATH = root;
@@ -604,6 +731,14 @@ describe("SemFS service", () => {
     });
     expect(manifest.statusCode).toBe(200);
     expect(manifest.json().manifest.active_routes).toContain("owner_onboarding");
+
+    const identityMap = await app.inject({
+      method: "GET",
+      url: "/v1/identities/test-identity/map",
+      headers: { authorization: "Bearer test-token" },
+    });
+    expect(identityMap.statusCode).toBe(200);
+    expect(identityMap.json().identity_map.areas.some((area: Record<string, unknown>) => area.key === "knowledge")).toBe(true);
 
     const mcpGet = await app.inject({
       method: "GET",
@@ -682,9 +817,12 @@ describe("SemFS service", () => {
     const runtimeTools = [
       "semfs_authorize_agent_action",
       "semfs_create_capability_proposal",
+      "semfs_create_credential_binding_request",
       "semfs_create_review_packet",
       "semfs_get_agent",
+      "semfs_get_budget_posture",
       "semfs_get_identity_status",
+      "semfs_get_identity_map",
       "semfs_get_manifest",
       "semfs_get_memory_status",
       "semfs_prepare_agent_action",
@@ -696,7 +834,9 @@ describe("SemFS service", () => {
       "semfs_record_agent_run_result",
       "semfs_record_capability_gap",
       "semfs_record_inbound_context",
+      "semfs_record_knowledge_draft",
       "semfs_record_owner_context",
+      "semfs_record_research_source",
       "semfs_record_runtime_capabilities",
       "semfs_validate_agent_output",
       "semfs_validate_dream",
@@ -708,14 +848,26 @@ describe("SemFS service", () => {
 
     await expect(listMcpToolNames(container, "public")).resolves.toEqual(["semfs_get_identity_status"]);
     await expect(listMcpToolNames(container, "readonly")).resolves.toEqual(
-      ["semfs_get_agent", "semfs_get_identity_status", "semfs_get_manifest", "semfs_get_memory_status", "semfs_prepare_inbound", "semfs_vector_search"].sort()
+      ["semfs_get_agent", "semfs_get_budget_posture", "semfs_get_identity_map", "semfs_get_identity_status", "semfs_get_manifest", "semfs_get_memory_status", "semfs_prepare_inbound", "semfs_vector_search"].sort()
     );
     await expect(listMcpToolNames(container, "runtime")).resolves.toEqual(runtimeTools);
     await expect(listMcpToolNames(container, "owner_runtime")).resolves.toEqual(
-      [...runtimeTools, "semfs_apply_owner_identity_seed", "semfs_capture_approval", "semfs_link_approval_to_artifact"].sort()
+      [
+        ...runtimeTools,
+        "semfs_activate_agent",
+        "semfs_activate_route",
+        "semfs_apply_domain_context",
+        "semfs_apply_offer_catalog_update",
+        "semfs_apply_owner_identity_seed",
+        "semfs_apply_voice_profile_update",
+        "semfs_capture_approval",
+        "semfs_link_approval_to_artifact",
+        "semfs_promote_knowledge_draft",
+        "semfs_resolve_review_packet",
+      ].sort()
     );
     await expect(listMcpToolNames(container, "admin")).resolves.toEqual(
-      [...runtimeTools, "semfs_capture_approval", "semfs_initialize_identity", "semfs_link_approval_to_artifact"].sort()
+      [...runtimeTools, "semfs_activate_agent", "semfs_activate_route", "semfs_capture_approval", "semfs_initialize_identity", "semfs_link_approval_to_artifact", "semfs_promote_knowledge_draft", "semfs_resolve_review_packet"].sort()
     );
   });
 

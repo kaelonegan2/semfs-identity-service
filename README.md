@@ -181,8 +181,12 @@ Identity:
 - `GET /v1/identities/:identity_id/status`
 - `POST /v1/identities/:identity_id/inbound/prepare`
 - `GET /v1/identities/:identity_id/manifest`
+- `GET /v1/identities/:identity_id/map`
 - `GET /v1/identities/:identity_id/context`
 - `POST /v1/identities/:identity_id/profile/apply-owner-seed`
+- `POST /v1/identities/:identity_id/profile/voice`
+- `POST /v1/identities/:identity_id/profile/domain`
+- `POST /v1/identities/:identity_id/offers/catalog`
 
 Agents:
 
@@ -198,6 +202,26 @@ Runs:
 - `POST /v1/identities/:identity_id/runs/resolve-route`
 - `POST /v1/identities/:identity_id/runs/prepare-agent`
 - `POST /v1/identities/:identity_id/runs/hydrate`
+- `POST /v1/identities/:identity_id/runtime/capabilities`
+- `POST /v1/identities/:identity_id/runs/prepare-orchestration`
+- `POST /v1/identities/:identity_id/runs/prepare-subagent`
+- `POST /v1/identities/:identity_id/runs/events`
+- `POST /v1/identities/:identity_id/runs/results`
+
+Maturation:
+
+- `POST /v1/identities/:identity_id/context/owner`
+- `POST /v1/identities/:identity_id/context/inbound`
+- `POST /v1/identities/:identity_id/knowledge/drafts`
+- `POST /v1/identities/:identity_id/knowledge/drafts/:draft_id/promote`
+- `POST /v1/identities/:identity_id/research/sources`
+- `POST /v1/identities/:identity_id/capability-gaps`
+- `POST /v1/identities/:identity_id/capability-proposals`
+- `POST /v1/identities/:identity_id/review-packets/resolve`
+- `POST /v1/identities/:identity_id/governance/budget-posture`
+- `POST /v1/identities/:identity_id/security/credential-binding-requests`
+- `POST /v1/identities/:identity_id/agents/:agent_id/activate`
+- `POST /v1/identities/:identity_id/routes/:route/activate`
 
 Memory:
 
@@ -246,6 +270,7 @@ Core tools:
 - `semfs_prepare_inbound`
 - `semfs_get_memory_status`
 - `semfs_get_manifest`
+- `semfs_get_identity_map`
 - `semfs_apply_owner_identity_seed`
 - `semfs_get_agent`
 - `semfs_prepare_agent_action`
@@ -259,6 +284,27 @@ Core tools:
 - `semfs_write_safe_artifact`
 - `semfs_create_review_packet`
 - `semfs_capture_approval`
+- `semfs_record_runtime_capabilities`
+- `semfs_prepare_orchestration_run`
+- `semfs_prepare_subagent_run`
+- `semfs_record_agent_run_event`
+- `semfs_record_agent_run_result`
+- `semfs_record_owner_context`
+- `semfs_record_inbound_context`
+- `semfs_record_knowledge_draft`
+- `semfs_promote_knowledge_draft`
+- `semfs_apply_voice_profile_update`
+- `semfs_apply_domain_context`
+- `semfs_apply_offer_catalog_update`
+- `semfs_record_research_source`
+- `semfs_record_capability_gap`
+- `semfs_create_capability_proposal`
+- `semfs_link_approval_to_artifact`
+- `semfs_resolve_review_packet`
+- `semfs_get_budget_posture`
+- `semfs_create_credential_binding_request`
+- `semfs_activate_agent`
+- `semfs_activate_route`
 
 See [docs/mcp.md](docs/mcp.md).
 
