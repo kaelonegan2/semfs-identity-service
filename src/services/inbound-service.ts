@@ -111,6 +111,37 @@ export class InboundService {
         output_contract_name: outputContractName,
         output_contract: outputContracts?.[outputContractName] ?? null,
       },
+      runtime_protocol: {
+        schema_version: "semfs_runtime_protocol.v1",
+        phase: "inbound_prepared",
+        applies_to: "current_inbound_message",
+        response_allowed: true,
+        inbound_preparation_satisfied: true,
+        status_recheck_allowed: false,
+        status_recheck_allowed_only_when: ["unknown_identity_error", "identity_id_changed", "previous_status_call_failed"],
+        next_allowed_semfs_tools: [
+          "semfs_prepare_agent_action",
+          "semfs_authorize_agent_action",
+          "semfs_validate_agent_output",
+          "semfs_vector_search",
+          "semfs_get_agent",
+          "semfs_get_manifest",
+          "semfs_get_identity_map",
+          "semfs_create_review_packet",
+          "semfs_write_safe_artifact",
+          "semfs_vector_upsert",
+          "semfs_prepare_dream",
+        ],
+        forbidden_next_semfs_tools_for_same_inbound: ["semfs_get_identity_status"],
+        final_response_constraints: {
+          do_not_expose_tool_names: true,
+          do_not_emit_tool_call_narration: true,
+          do_not_mention_internal_routes_or_contracts: true,
+          do_not_expose_raw_packet_json: true,
+        },
+        user_facing_instruction:
+          "Use this compact packet to answer naturally as the identity. Do not narrate SemFS calls, wrapper tool calls, JSON fields, internal route names, or protocol mechanics to the user.",
+      },
       response_rules: {
         user_facing: true,
         posture: this.responsePosture(bundle, input, access),
@@ -353,7 +384,7 @@ export class InboundService {
       external_lookup_policy:
         liveExternalDataRequested && !externalLookupAvailable
           ? "Do not claim you can fetch, look up, research, or verify live external data. A runtime capability snapshot must explicitly enable external lookup before it can be used. State the limitation once in plain language and offer a useful alternative."
-          : "Use only tools and data actually exposed by the runtime. Do not imply unavailable external lookup, browsing, weather, or research capability.",
+          : "Use only tools and data actually exposed by the runtime. Do not imply unavailable external lookup, browsing, research, or source-verification capability.",
       missing_capability:
         liveExternalDataRequested && !externalLookupAvailable
           ? {
@@ -504,13 +535,13 @@ export class InboundService {
 
   private needsLiveExternalData(input: PrepareInboundInput): boolean {
     const text = `${input.message ?? ""} ${input.intent ?? ""} ${input.context_kind ?? ""}`.toLowerCase();
-    const liveWords = ["weather", "forecast", "temperature", "current conditions", "live", "latest", "lookup", "look up", "fetch", "search", "research", "verify"];
+    const liveWords = ["live", "latest", "lookup", "look up", "fetch", "search", "research", "verify", "current", "recent", "source"];
     return liveWords.some((word) => text.includes(word));
   }
 
   private hasEnoughExternalLookupDetails(input: PrepareInboundInput): boolean {
     const text = `${input.message ?? ""} ${input.intent ?? ""}`.toLowerCase();
-    return /\b\d{5}(?:-\d{4})?\b/.test(text) || /\b(city|zip|postal|for|in|near)\b/.test(text);
+    return /\b\d{3,10}(?:[-\s][a-z0-9]{2,10})?\b/i.test(text) || /\b(city|postal|postcode|location|region|area|for|in|near)\b/.test(text);
   }
 
   private hasActiveExternalLookupTool(bundle: IdentityBundle, runtimeCapabilityContext: Record<string, unknown>): boolean {
@@ -524,7 +555,7 @@ export class InboundService {
       const authority = String(tool.authority ?? "").toLowerCase();
       const status = String(tool.status ?? "").toLowerCase();
       const looksExternal = [id, category, authority].some((value) =>
-        ["public_web", "external", "weather", "lookup", "research", "source_quality"].some((needle) => value.includes(needle))
+        ["public_web", "external", "lookup", "research", "source_quality", "source_verification"].some((needle) => value.includes(needle))
       );
       const active = ["available", "enabled", "active"].some((needle) => status.includes(needle)) && !status.includes("disabled");
       return looksExternal && active;

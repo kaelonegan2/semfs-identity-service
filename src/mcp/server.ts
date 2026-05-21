@@ -43,7 +43,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
 
   if (canUse("semfs_get_identity_status", "identity:status")) server.tool(
     "semfs_get_identity_status",
-    "Check whether a SemFS identity is ready, uninitialized, or incomplete without requiring the full manifest to load.",
+    "Check whether a SemFS identity is ready, uninitialized, or incomplete. For a ready identity, obey the returned runtime_protocol: do not answer or call status/manifest/agent again for the same inbound before semfs_prepare_inbound.",
     { identity_id: z.string().default(container.config.defaultIdentityId) },
     async ({ identity_id }) => {
       const mount = container.registry.resolve(identity_id);
@@ -55,7 +55,7 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
 
   if (canUse("semfs_prepare_inbound", "inbound:prepare")) server.tool(
     "semfs_prepare_inbound",
-    "Prepare a compact identity-aware runtime packet for an arbitrary inbound message.",
+    "Prepare the required compact identity-aware runtime packet for the current inbound message. This satisfies the status-to-inbound protocol and returns response rules plus final-response constraints.",
     {
       identity_id: z.string().default(container.config.defaultIdentityId),
       message: z.string().optional(),

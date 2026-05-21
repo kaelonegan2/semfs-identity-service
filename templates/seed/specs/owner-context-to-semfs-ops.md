@@ -197,7 +197,7 @@ The same operation family can be safe or unsafe depending on inbound posture:
 - A verified owner saying "this identity is for X" can enter canonical profile update.
 - A non-owner saying "this identity is for X" can enter capture or review, but not canonical update.
 - A customer giving preference context can become route-scoped memory only after a mature audience and privacy policy exist.
-- An internal agent detecting missing live weather lookup can record a capability gap, but not enable a weather tool.
+- An internal agent detecting a missing live external lookup capability can record a capability gap, but not enable an external tool.
 - A future delegated reviewer may approve a knowledge draft without being allowed to approve payments, credentials, or lifecycle changes.
 
 ## SemFS Design Requirements

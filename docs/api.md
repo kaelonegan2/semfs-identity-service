@@ -41,4 +41,21 @@ Core endpoints:
 - `POST /v1/identities/:identity_id/dreams/validate`
 - `POST /v1/identities/:identity_id/dreams/write-safe`
 
+`GET /v1/identities/:identity_id/status` and `POST /v1/identities/:identity_id/inbound/prepare` return `runtime_protocol` when the credential has inbound preparation access.
+
+For a ready identity, status normally returns:
+
+- `runtime_protocol.phase: "status_checked"`
+- `runtime_protocol.response_allowed: false`
+- `runtime_protocol.next_required_call.tool: "semfs_prepare_inbound"`
+- `runtime_protocol.next_allowed_semfs_tools: ["semfs_prepare_inbound"]`
+- `runtime_protocol.forbidden_next_semfs_tools_for_same_inbound`, including repeated status calls
+
+Inbound preparation then returns:
+
+- `runtime_protocol.phase: "inbound_prepared"`
+- `runtime_protocol.response_allowed: true`
+- `runtime_protocol.inbound_preparation_satisfied: true`
+- final response constraints that prohibit exposing tool traces, wrapper calls, raw packet JSON, internal routes, and contract fields
+
 SemFS returns identity guidance and validation packets. It does not execute LLM calls.

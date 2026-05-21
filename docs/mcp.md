@@ -19,6 +19,10 @@ MCP tools are exposed according to the credential used to connect. For example, 
 
 For stdio MCP, SemFS selects a configured credential in this order: `SEMFS_MCP_AUTH_TOKEN` when set, then owner runtime, runtime, then `SEMFS_AUTH_TOKEN`. It does not invent admin authority for stdio sessions.
 
+Runtime agents should obey the `runtime_protocol` object returned by status and inbound preparation tools. For a ready identity, `semfs_get_identity_status` normally sets `response_allowed: false` and requires `semfs_prepare_inbound` as the next SemFS call for the same inbound message. Repeating status, reading the manifest, or answering the user before inbound preparation is a protocol violation unless SemFS returned an error or the runtime changed identities.
+
+If SemFS is exposed through a host-specific wrapper tool, the wrapper does not change the protocol: the next wrapped SemFS operation must still be the required tool. User-facing responses should not contain wrapper names, call IDs, tool inputs, raw packet JSON, internal route names, or contract fields.
+
 Important tools:
 
 - `semfs_initialize_identity`

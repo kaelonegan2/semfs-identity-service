@@ -315,14 +315,17 @@ A versioned starter runtime prompt for external agents is available at [docs/run
 A typical external agent flow is:
 
 1. Call `semfs_get_identity_status` to determine whether the identity is `ready`, `uninitialized`, or `incomplete`.
-2. If the identity is uninitialized and the runtime is configured to do so, call `semfs_initialize_identity`.
-3. Call `semfs_prepare_inbound` to get a compact identity-aware packet for the inbound message.
-4. Call `semfs_get_manifest` or `semfs_get_agent` only when the compact packet is insufficient.
-5. Call `semfs_prepare_agent_action` with the intended task and available context when additional action prep is needed.
-6. Follow the returned prompts, policies, tool permissions, contracts, and memory guidance.
-7. Call `semfs_authorize_agent_action` before authority-bearing or tool-mediated work.
-8. Call `semfs_validate_agent_output` before saving or returning material outputs.
-9. Use review packets or safe artifact writes when the identity requires human review.
+2. Obey `runtime_protocol`. If status says `response_allowed: false` and `next_required_call.tool: semfs_prepare_inbound`, the next SemFS call for that same inbound must be `semfs_prepare_inbound`; do not answer, repeat status, or read the manifest first.
+3. If the identity is uninitialized and the runtime is configured to do so, call `semfs_initialize_identity`.
+4. Call `semfs_prepare_inbound` to get a compact identity-aware packet for every inbound message, including terse continuations, confirmations, numeric identifiers, entity references, and follow-up fragments.
+5. Call `semfs_get_manifest` or `semfs_get_agent` only when the compact packet is insufficient.
+6. Call `semfs_prepare_agent_action` with the intended task and available context when additional action prep is needed.
+7. Follow the returned prompts, policies, tool permissions, contracts, and memory guidance.
+8. Call `semfs_authorize_agent_action` before authority-bearing or tool-mediated work.
+9. Call `semfs_validate_agent_output` before saving or returning material outputs.
+10. Use review packets or safe artifact writes when the identity requires human review.
+
+Status and inbound preparation responses include a `runtime_protocol` object. It is designed as a hard contract for runtime loops: status for a ready identity normally permits only inbound preparation next, while inbound preparation marks the current message as prepared and allows the agent to respond or continue with narrower checks. User-facing responses should never include wrapper tool narration, raw packets, internal route names, contract fields, or SemFS tool traces.
 
 The seed identity starts conservatively: owner onboarding first, no technical owner burden, safe context capture, and review routing for authority-bearing work.
 

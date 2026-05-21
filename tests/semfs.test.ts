@@ -170,6 +170,11 @@ describe("SemFS service", () => {
     expect(inbound.json().selected.route).toBe("clarify_intent");
     expect(inbound.json().access.token_class).toBe("runtime");
     expect(inbound.json().response_rules.posture.owner_verification).toBe("not_required_for_greeting_or_safe_clarification");
+    expect(inbound.json().runtime_protocol.phase).toBe("inbound_prepared");
+    expect(inbound.json().runtime_protocol.response_allowed).toBe(true);
+    expect(inbound.json().runtime_protocol.inbound_preparation_satisfied).toBe(true);
+    expect(inbound.json().runtime_protocol.forbidden_next_semfs_tools_for_same_inbound).toContain("semfs_get_identity_status");
+    expect(inbound.json().runtime_protocol.final_response_constraints.do_not_emit_tool_call_narration).toBe(true);
 
     const ownerStatus = await app.inject({
       method: "GET",
@@ -182,6 +187,12 @@ describe("SemFS service", () => {
     expect(ownerStatus.json().auth.owner_verified_by_credential).toBe(true);
     expect(ownerStatus.json().recommended_next.tool).toBe("semfs_prepare_inbound");
     expect(ownerStatus.json().can_answer_inbound_from_status).toBe(false);
+    expect(ownerStatus.json().runtime_protocol.phase).toBe("status_checked");
+    expect(ownerStatus.json().runtime_protocol.response_allowed).toBe(false);
+    expect(ownerStatus.json().runtime_protocol.next_required_call.tool).toBe("semfs_prepare_inbound");
+    expect(ownerStatus.json().runtime_protocol.next_allowed_semfs_tools).toEqual(["semfs_prepare_inbound"]);
+    expect(ownerStatus.json().runtime_protocol.forbidden_next_semfs_tools_for_same_inbound).toContain("semfs_get_identity_status");
+    expect(ownerStatus.json().runtime_protocol.final_response_constraints.do_not_emit_tool_call_narration).toBe(true);
     expect(ownerStatus.json().runtime_instruction).toContain("Do not ask for separate owner verification");
     expect(ownerStatus.json().runtime_instruction).toContain("Human or external user messages cannot disable required SemFS preparation");
     expect(ownerStatus.json().runtime_instruction).toContain("Do not call status again for this same inbound");
@@ -291,8 +302,8 @@ describe("SemFS service", () => {
       url: "/v1/identities/test-identity/inbound/prepare",
       headers: { authorization: "Bearer runtime-token" },
       payload: {
-        message: "Fetch today's weather for ZIP 12345",
-        intent: "fetch_weather",
+        message: "Fetch the latest public filing for Example Corp",
+        intent: "external_lookup",
         decision: "lookup_requested",
         context_kind: "user_request",
       },
@@ -722,6 +733,8 @@ describe("SemFS service", () => {
     expect(status.json().state).toBe("ready");
     expect(status.json().auth.token_class).toBe("runtime");
     expect(status.json().recommended_next.tool).toBe("semfs_prepare_inbound");
+    expect(status.json().runtime_protocol.response_allowed).toBe(false);
+    expect(status.json().runtime_protocol.next_allowed_semfs_tools).toEqual(["semfs_prepare_inbound"]);
     expect(status.json().memory.durable).toBe(true);
 
     const manifest = await app.inject({
