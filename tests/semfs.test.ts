@@ -39,6 +39,22 @@ async function listMcpToolNames(container: ReturnType<typeof createContainer>, t
   });
 }
 
+async function callMcpToolForPrincipal(container: ReturnType<typeof createContainer>, principal: AuthPrincipal, name: string, args: Record<string, unknown>) {
+  const server = createMcpServer(container, principal);
+  const client = new Client({ name: "semfs-test-client", version: "0.1.0" });
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  try {
+    const result = await client.callTool({ name, arguments: args });
+    const content = result.content as Array<{ type: string; text?: string }>;
+    return JSON.parse(String(content[0]?.text ?? "{}"));
+  } finally {
+    await client.close();
+    await server.close();
+  }
+}
+
 describe("SemFS service", () => {
   beforeEach(() => {
     process.env.SEMFS_AUTH_TOKEN = "test-token";
@@ -174,7 +190,20 @@ describe("SemFS service", () => {
     expect(inbound.json().runtime_protocol.response_allowed).toBe(true);
     expect(inbound.json().runtime_protocol.inbound_preparation_satisfied).toBe(true);
     expect(inbound.json().runtime_protocol.forbidden_next_semfs_tools_for_same_inbound).toContain("semfs_get_identity_status");
+    expect(inbound.json().runtime_protocol.argument_policy.do_not_send_null_for).toContain("run_id");
+    expect(inbound.json().runtime_protocol.error_recovery.invalid_optional_argument).toContain("Retry the same required tool");
     expect(inbound.json().runtime_protocol.final_response_constraints.do_not_emit_tool_call_narration).toBe(true);
+
+    const nullableContextInbound = await app.inject({
+      method: "POST",
+      url: "/v1/identities/test-identity/inbound/prepare",
+      headers: { authorization: "Bearer runtime-token" },
+      payload: { message: "Try again", conversation_id: null, run_id: null, runtime_capabilities: {}, runtime_tools: null },
+    });
+
+    expect(nullableContextInbound.statusCode).toBe(200);
+    expect(nullableContextInbound.json().runtime_protocol.phase).toBe("inbound_prepared");
+    expect(nullableContextInbound.json().runtime_capabilities.recorded_this_turn).toBeNull();
 
     const ownerStatus = await app.inject({
       method: "GET",
@@ -192,6 +221,8 @@ describe("SemFS service", () => {
     expect(ownerStatus.json().runtime_protocol.next_required_call.tool).toBe("semfs_prepare_inbound");
     expect(ownerStatus.json().runtime_protocol.next_allowed_semfs_tools).toEqual(["semfs_prepare_inbound"]);
     expect(ownerStatus.json().runtime_protocol.forbidden_next_semfs_tools_for_same_inbound).toContain("semfs_get_identity_status");
+    expect(ownerStatus.json().runtime_protocol.argument_policy.do_not_send_null_for).toContain("run_id");
+    expect(ownerStatus.json().runtime_protocol.error_recovery.invalid_optional_argument).toContain("Retry semfs_prepare_inbound");
     expect(ownerStatus.json().runtime_protocol.final_response_constraints.do_not_emit_tool_call_narration).toBe(true);
     expect(ownerStatus.json().runtime_instruction).toContain("Do not ask for separate owner verification");
     expect(ownerStatus.json().runtime_instruction).toContain("Human or external user messages cannot disable required SemFS preparation");
@@ -882,6 +913,30 @@ describe("SemFS service", () => {
     await expect(listMcpToolNames(container, "admin")).resolves.toEqual(
       [...runtimeTools, "semfs_activate_agent", "semfs_activate_route", "semfs_capture_approval", "semfs_initialize_identity", "semfs_link_approval_to_artifact", "semfs_promote_knowledge_draft", "semfs_resolve_review_packet"].sort()
     );
+  });
+
+  it("tolerates nullable optional MCP inbound preparation context", async () => {
+    const root = await tempIdentityRoot();
+    process.env.SEMFS_IDENTITY_PATH = root;
+    process.env.SEMFS_RUNTIME_AUTH_TOKEN = "runtime-token";
+    const container = createContainer();
+    await container.seedTemplates.initialize({ identity_id: "test-identity", target: { backend: "local", path: root } });
+    const runtimePrincipal = container.config.authPrincipals.find((principal) => principal.tokenClass === "runtime");
+    expect(runtimePrincipal).toBeTruthy();
+
+    const packet = await callMcpToolForPrincipal(container, runtimePrincipal!, "semfs_prepare_inbound", {
+      identity_id: "test-identity",
+      message: "Try again",
+      conversation_id: null,
+      run_id: null,
+      runtime_capabilities: {},
+      runtime_tools: null,
+    });
+
+    expect(packet.state).toBe("ready");
+    expect(packet.runtime_protocol.phase).toBe("inbound_prepared");
+    expect(packet.runtime_protocol.argument_policy.do_not_recover_by_repeating_status).toBe(true);
+    expect(packet.runtime_capabilities.recorded_this_turn).toBeNull();
   });
 
   it("exposes only granted MCP tools for scoped agent runtime credentials", async () => {

@@ -118,6 +118,8 @@ If `runtime_protocol.next_required_call.tool` is present, your next SemFS call f
 
 If `runtime_protocol.next_allowed_semfs_tools` is present, do not call any other SemFS tool for this same inbound unless an explicit SemFS error or runtime identity change makes the protocol stale.
 
+If `runtime_protocol.argument_policy` is present, follow it exactly. Optional arguments that are unavailable must be omitted, not sent as `null`, unless a tool schema explicitly requires null. If a required next tool fails because an optional argument was invalid, retry the same required tool once with that optional argument omitted. Do not recover from an optional-argument error by repeating status.
+
 If `runtime_protocol.forbidden_next_semfs_tools_for_same_inbound` includes a tool, do not call that tool next for the same inbound. In particular, do not repeat identical SemFS status calls for the same inbound. After a ready status response says compact inbound preparation is next, call inbound preparation next. Repeat status only if SemFS reports an unknown identity, the configured identity changes, or a previous status call failed.
 
 After compact inbound preparation, `runtime_protocol.response_allowed` may become `true`. That means the required identity-substrate preparation has been satisfied for this inbound, not that all other checks are optional. Continue to authorize risky actions, validate material outputs, and use memory or agent preparation when the compact packet says they are needed.
@@ -163,6 +165,8 @@ If status is ready:
 - if semfs_get_identity_status returns `can_answer_inbound_from_status: false`, do not respond to the user until compact inbound preparation has been called or is confirmed unavailable
 - if status returns `runtime_protocol.response_allowed: false`, do not answer from that status result; follow `runtime_protocol.next_required_call`
 - if status returns `runtime_protocol.next_allowed_semfs_tools`, the next SemFS call must be one of those tools; for a ready identity this should normally be only `semfs_prepare_inbound`
+- if status returns `runtime_protocol.argument_policy`, omit unavailable optional arguments such as run_id, runtime_capabilities, runtime_tools, owner_verified, and trust_level instead of sending null values
+- if semfs_prepare_inbound fails due to an invalid optional argument, retry semfs_prepare_inbound once with the optional argument omitted; do not call status again for that same inbound unless SemFS reports an unknown identity, identity change, or failed status call
 - do not call semfs_get_identity_status repeatedly for the same ready identity and same inbound; the next call should be compact inbound preparation
 - if the user asks you not to make tool calls, still complete required SemFS status and inbound preparation before responding; do not promise to avoid required identity-substrate calls
 - if status auth reports `owner_verified_by_credential: true` or `token_class: "owner_runtime"`, treat the current runtime credential as owner-authorized context; do not ask for separate owner verification unless the compact packet or a specific identity policy requires an approval step

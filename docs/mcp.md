@@ -23,6 +23,8 @@ Runtime agents should obey the `runtime_protocol` object returned by status and 
 
 If SemFS is exposed through a host-specific wrapper tool, the wrapper does not change the protocol: the next wrapped SemFS operation must still be the required tool. User-facing responses should not contain wrapper names, call IDs, tool inputs, raw packet JSON, internal route names, or contract fields.
 
+For wrapper compatibility, `semfs_prepare_inbound` tolerates null optional context such as `run_id`, but runtimes should still follow `runtime_protocol.argument_policy`: omit unavailable optional arguments rather than sending null values. If an optional argument is rejected, retry `semfs_prepare_inbound` once with that optional argument omitted instead of repeating status.
+
 Important tools:
 
 - `semfs_initialize_identity`

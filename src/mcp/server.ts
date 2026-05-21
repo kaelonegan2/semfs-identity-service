@@ -55,14 +55,14 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
 
   if (canUse("semfs_prepare_inbound", "inbound:prepare")) server.tool(
     "semfs_prepare_inbound",
-    "Prepare the required compact identity-aware runtime packet for the current inbound message. This satisfies the status-to-inbound protocol and returns response rules plus final-response constraints.",
+    "Prepare the required compact identity-aware runtime packet for the current inbound message. Optional values such as run_id and runtime_capabilities should be omitted when unavailable; null is tolerated for adapter compatibility. This satisfies the status-to-inbound protocol and returns response rules plus final-response constraints.",
     {
       identity_id: z.string().default(container.config.defaultIdentityId),
       message: z.string().optional(),
       conversation_id: z.string().nullable().optional(),
-      run_id: z.string().optional(),
-      runtime_capabilities: z.record(z.unknown()).optional(),
-      runtime_tools: z.array(z.string()).optional(),
+      run_id: z.string().nullable().optional(),
+      runtime_capabilities: z.record(z.unknown()).nullable().optional(),
+      runtime_tools: z.array(z.string()).nullable().optional(),
       owner_verified: z.boolean().optional(),
       trust_level: z.string().optional(),
       risk_detected: z.boolean().optional(),

@@ -327,6 +327,8 @@ A typical external agent flow is:
 
 Status and inbound preparation responses include a `runtime_protocol` object. It is designed as a hard contract for runtime loops: status for a ready identity normally permits only inbound preparation next, while inbound preparation marks the current message as prepared and allows the agent to respond or continue with narrower checks. User-facing responses should never include wrapper tool narration, raw packets, internal route names, contract fields, or SemFS tool traces.
 
+`runtime_protocol.argument_policy` tells runtimes how to handle optional tool arguments. Unavailable optional values should be omitted rather than sent as `null`. If a required next tool fails because an optional argument was invalid, retry the same required tool once with the optional argument omitted instead of recovering by repeating status.
+
 The seed identity starts conservatively: owner onboarding first, no technical owner burden, safe context capture, and review routing for authority-bearing work.
 
 ## Dreaming Flow

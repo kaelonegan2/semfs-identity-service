@@ -240,9 +240,17 @@ export class AuthService {
           include_current_inbound_message: true,
           include_conversation_id_when_available: true,
           include_run_id_when_available: true,
+          omit_unavailable_optional_args: true,
         },
         next_allowed_semfs_tools: ["semfs_prepare_inbound"],
         forbidden_next_semfs_tools_for_same_inbound: ["semfs_get_identity_status", "semfs_get_manifest", "semfs_get_agent"],
+        argument_policy: this.runtimeArgumentPolicy(),
+        error_recovery: {
+          invalid_optional_argument:
+            "Retry semfs_prepare_inbound once with unavailable optional arguments omitted. Do not call semfs_get_identity_status again for the same inbound because an optional argument was rejected.",
+          failed_capability_snapshot:
+            "If conversation_id or run_id is unavailable, omit runtime_capabilities and continue with semfs_prepare_inbound; do not invent runtime capabilities.",
+        },
         status_recheck_allowed_only_when: ["unknown_identity_error", "identity_id_changed", "previous_status_call_failed"],
         violation:
           "If the next SemFS call for this same inbound is not semfs_prepare_inbound, stop and correct course before producing user-facing text.",
@@ -254,6 +262,17 @@ export class AuthService {
       };
     }
     return response;
+  }
+
+  private runtimeArgumentPolicy(): Record<string, unknown> {
+    return {
+      optional_arguments: ["conversation_id", "run_id", "runtime_capabilities", "runtime_tools", "owner_verified", "trust_level"],
+      omit_when_unavailable: ["conversation_id", "run_id", "runtime_capabilities", "runtime_tools", "owner_verified", "trust_level"],
+      do_not_send_null_for: ["run_id", "runtime_capabilities", "runtime_tools", "owner_verified", "trust_level"],
+      nullable_but_prefer_omitted: ["conversation_id"],
+      retry_same_required_tool_after_argument_error: true,
+      do_not_recover_by_repeating_status: true,
+    };
   }
 
   private redact(principal: AuthPrincipal): AuthPrincipal {

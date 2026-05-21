@@ -50,12 +50,14 @@ For a ready identity, status normally returns:
 - `runtime_protocol.next_required_call.tool: "semfs_prepare_inbound"`
 - `runtime_protocol.next_allowed_semfs_tools: ["semfs_prepare_inbound"]`
 - `runtime_protocol.forbidden_next_semfs_tools_for_same_inbound`, including repeated status calls
+- `runtime_protocol.argument_policy`, which tells runtimes to omit unavailable optional arguments instead of sending null values
 
 Inbound preparation then returns:
 
 - `runtime_protocol.phase: "inbound_prepared"`
 - `runtime_protocol.response_allowed: true`
 - `runtime_protocol.inbound_preparation_satisfied: true`
+- `runtime_protocol.error_recovery`, which says to retry the same required tool once with invalid optional arguments omitted rather than repeating status
 - final response constraints that prohibit exposing tool traces, wrapper calls, raw packet JSON, internal routes, and contract fields
 
 SemFS returns identity guidance and validation packets. It does not execute LLM calls.

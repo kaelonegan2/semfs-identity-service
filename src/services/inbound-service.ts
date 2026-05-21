@@ -8,11 +8,11 @@ import { RuntimeOrchestrationService } from "./runtime-orchestration-service.js"
 interface PrepareInboundInput {
   message?: string;
   conversation_id?: string | null;
-  run_id?: string;
+  run_id?: string | null;
   inbound_source?: string;
   include_agent_prompt?: boolean;
-  runtime_capabilities?: Record<string, unknown>;
-  runtime_tools?: string[];
+  runtime_capabilities?: Record<string, unknown> | null;
+  runtime_tools?: string[] | null;
   owner_verified?: boolean;
   trust_level?: string;
   risk_detected?: boolean;
@@ -50,7 +50,7 @@ export class InboundService {
     }
 
     const bundle = await this.loader.load(mount);
-    const runtimeCapabilityRecord = input.runtime_capabilities
+    const runtimeCapabilityRecord = this.shouldRecordRuntimeCapabilities(input)
       ? await this.runtime.recordRuntimeCapabilities(mount, bundle, { ...input, source: input.context_kind ?? "inbound_prepare" }, input.auth)
       : null;
     const runtimeCapabilityContext = await this.runtime.runtimeCapabilityContext(mount, input as Record<string, unknown>);
@@ -133,6 +133,13 @@ export class InboundService {
           "semfs_prepare_dream",
         ],
         forbidden_next_semfs_tools_for_same_inbound: ["semfs_get_identity_status"],
+        argument_policy: this.argumentPolicy(),
+        error_recovery: {
+          invalid_optional_argument:
+            "Retry the same required tool once with unavailable optional arguments omitted. Do not call semfs_get_identity_status again for the same inbound just because an optional argument was invalid.",
+          failed_capability_snapshot:
+            "If conversation_id or run_id is unavailable, omit runtime_capabilities and continue with inbound preparation; do not invent runtime capabilities.",
+        },
         final_response_constraints: {
           do_not_expose_tool_names: true,
           do_not_emit_tool_call_narration: true,
@@ -531,6 +538,27 @@ export class InboundService {
 
   private isApprovalContinuation(input: PrepareInboundInput): boolean {
     return ["accept", "approve", "confirm"].includes(String(input.decision ?? "")) && (Boolean(input.conversation_id) || input.pending_identity_context === true);
+  }
+
+  private shouldRecordRuntimeCapabilities(input: PrepareInboundInput): boolean {
+    const capabilities = input.runtime_capabilities;
+    if (!capabilities || Object.keys(capabilities).length === 0) return false;
+    return this.nonEmptyString(input.conversation_id) && this.nonEmptyString(input.run_id);
+  }
+
+  private nonEmptyString(value: unknown): value is string {
+    return typeof value === "string" && value.trim().length > 0;
+  }
+
+  private argumentPolicy(): Record<string, unknown> {
+    return {
+      optional_arguments: ["conversation_id", "run_id", "runtime_capabilities", "runtime_tools", "owner_verified", "trust_level"],
+      omit_when_unavailable: ["conversation_id", "run_id", "runtime_capabilities", "runtime_tools", "owner_verified", "trust_level"],
+      do_not_send_null_for: ["run_id", "runtime_capabilities", "runtime_tools", "owner_verified", "trust_level"],
+      nullable_but_prefer_omitted: ["conversation_id"],
+      retry_same_required_tool_after_argument_error: true,
+      do_not_recover_by_repeating_status: true,
+    };
   }
 
   private needsLiveExternalData(input: PrepareInboundInput): boolean {
