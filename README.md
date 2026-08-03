@@ -17,7 +17,7 @@ The seed identity is designed to mature safely. It starts under-contextualized, 
 ## What SemFS Provides
 
 - Seed identity initialization for a brand-new identity repository.
-- Identity inspection through manifest and context endpoints.
+- Identity inspection through manifest, context, and deterministic self-inspection endpoints.
 - Internal agent retrieval with prompts, policies, tools, skills, specialists, contracts, and memory access.
 - Agent action preparation, authorization, and output validation.
 - Semantic memory surfaces with namespace and privacy policy checks.
@@ -182,6 +182,7 @@ Identity:
 - `POST /v1/identities/:identity_id/inbound/prepare`
 - `GET /v1/identities/:identity_id/manifest`
 - `GET /v1/identities/:identity_id/context`
+- `GET /v1/identities/:identity_id/inspection`
 - `POST /v1/identities/:identity_id/profile/apply-owner-seed`
 
 Agents:
@@ -246,6 +247,7 @@ Core tools:
 - `semfs_prepare_inbound`
 - `semfs_get_memory_status`
 - `semfs_get_manifest`
+- `semfs_inspect_identity`
 - `semfs_apply_owner_identity_seed`
 - `semfs_get_agent`
 - `semfs_prepare_agent_action`
@@ -330,7 +332,11 @@ Useful scripts:
 - `pnpm dev`: run the REST and HTTP MCP service from TypeScript.
 - `pnpm start`: run the compiled service from `dist`.
 - `pnpm mcp`: run the stdio MCP server.
+- `pnpm inspect`: deterministically inspect an identity repository.
+- `pnpm eval:inspection`: run self-inspection adversarial/smoke evals.
 - `pnpm test`: run the Vitest test suite.
+
+See [docs/self-inspection.md](docs/self-inspection.md).
 
 ## Repository Layout
 

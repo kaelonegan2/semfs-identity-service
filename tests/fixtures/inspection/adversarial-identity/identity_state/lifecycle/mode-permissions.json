@@ -1,0 +1,18 @@
+{
+  "schema_version": "identity_mode_permissions.v1",
+  "active_mode": "seed_runtime_available",
+  "modes": {
+    "seed_runtime_available": {
+      "autonomous_work": ["repo_inspection"],
+      "routes_allowed": ["owner_onboarding", "stop"],
+      "tools_allowed": ["repo_read"],
+      "optional_tools_if_runtime_enabled": [],
+      "repo_updates_allowed": [],
+      "approval_required_for": ["capability_activation"],
+      "non_owner_inbound": {
+        "may_route_to": ["stop"],
+        "may_not": ["mature_identity"]
+      }
+    }
+  }
+}

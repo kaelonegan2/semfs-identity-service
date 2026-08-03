@@ -54,6 +54,8 @@
     "vector_namespace_map": "identity_state/memory/vector-namespaces.json",
     "common_prep_schema": ".runtime/contracts/common-prep.schema.json",
     "tool_aliases": "identity_state/registries/tool-aliases.json",
-    "namespace_maturation_map": "identity_state/memory/namespace-maturation-map.json"
+    "namespace_maturation_map": "identity_state/memory/namespace-maturation-map.json",
+    "inspection_report_schema": ".runtime/contracts/identity-inspection-report.schema.json",
+    "eval_coverage": "evals/coverage.json"
   }
 }

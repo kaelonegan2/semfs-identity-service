@@ -1,0 +1,11 @@
+{
+  "schema_version": "identity_lifecycle_state.v1",
+  "identity_id": "adversarial-identity",
+  "current_mode": "seed_runtime_available",
+  "mode_permissions_ref": "identity_state/lifecycle/mode-permissions.json",
+  "status_ref": "identity_state/status/current.json",
+  "readiness_score_ref": "identity_state/lifecycle/missing-readiness.json",
+  "autonomous_work_allowed": ["inspect_identity_repo"],
+  "approval_required_for": ["capability_activation"],
+  "blocked_in_seed": ["automatic_capability_activation"]
+}

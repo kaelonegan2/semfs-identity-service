@@ -1,0 +1,48 @@
+{
+  "version": "2026-04-30.adversarial",
+  "registry_scope": "seed_runtime_available",
+  "dispatch_field": "decision.routing.next",
+  "agents": [
+    {
+      "id": "owner_onboarding",
+      "status": "active",
+      "class": "seed_owner_agent",
+      "prompt_ref": "identity_state/prompts/agents/owner-onboarding.md",
+      "tools": ["repo_read"],
+      "output_contract": "owner_onboarding",
+      "facet_target": "owner_onboarding",
+      "authority_limits": ["no_activation"]
+    },
+    {
+      "id": "capability_gap_manager",
+      "status": "active",
+      "class": "seed_evolution_agent",
+      "prompt_ref": "identity_state/prompts/agents/missing-prompt.md",
+      "tools": ["repo_read", "capability_gap_record"],
+      "output_contract": "missing_contract",
+      "facet_target": "missing_facet",
+      "authority_limits": ["record_gap_only"]
+    },
+    {
+      "id": "stop",
+      "status": "active",
+      "class": "internal_control_agent",
+      "prompt_ref": "identity_state/prompts/agents/stop.md",
+      "tools": ["repo_read"],
+      "output_contract": "closeout",
+      "facet_target": "closeout",
+      "authority_limits": ["no_side_effects"]
+    },
+    {
+      "id": "orphan_active_agent",
+      "status": "active",
+      "class": "seed_maturation_agent",
+      "prompt_ref": "identity_state/prompts/agents/owner-onboarding.md",
+      "tools": ["repo_read"],
+      "output_contract": "owner_onboarding",
+      "facet_target": "owner_onboarding",
+      "authority_limits": ["draft_only"]
+    }
+  ],
+  "inactive_future_agents": []
+}

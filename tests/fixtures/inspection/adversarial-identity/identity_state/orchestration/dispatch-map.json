@@ -1,0 +1,42 @@
+{
+  "version": "2026-04-30.adversarial",
+  "route_field": "decision.routing.next",
+  "active_lifecycle_mode": "seed_runtime_available",
+  "dispatch_model": "lifecycle_mode_aware",
+  "lifecycle_modes": {
+    "seed_runtime_available": {
+      "routes": {
+        "owner_onboarding": {
+          "agent_id": "owner_onboarding",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/owner-onboarding.md",
+          "output_contract": "owner_onboarding",
+          "facet_target": "owner_onboarding"
+        },
+        "capability_gap": {
+          "agent_id": "capability_gap_manager",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/missing-prompt.md",
+          "output_contract": "capability_gap",
+          "facet_target": "capability_gap"
+        },
+        "stop": {
+          "agent_id": "stop",
+          "registry": "identity_state/registries/agents.json",
+          "prompt": "identity_state/prompts/agents/stop.md",
+          "output_contract": "closeout",
+          "facet_target": "closeout"
+        }
+      }
+    }
+  },
+  "routes": {
+    "owner_onboarding": {
+      "agent_id": "owner_onboarding",
+      "registry": "identity_state/registries/agents.json",
+      "prompt": "identity_state/prompts/agents/owner-onboarding.md",
+      "output_contract": "owner_onboarding",
+      "facet_target": "owner_onboarding"
+    }
+  }
+}

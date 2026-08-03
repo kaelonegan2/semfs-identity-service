@@ -1,0 +1,37 @@
+{
+  "schema_version": "self_inspection_eval.v1",
+  "id": "adversarial-identity-structural",
+  "title": "Adversarial identity structural inspection",
+  "description": "A deliberately inconsistent identity must produce violations across the V1 inspection finding taxonomy without trusting vector-style falsehood files.",
+  "suite": "self-inspection",
+  "tags": ["adversarial", "seed", "read-only"],
+  "identity_root": "tests/fixtures/inspection/adversarial-identity",
+  "identity_id": "adversarial-identity",
+  "eval_index": "tests/fixtures/inspection/failing-eval-index.json",
+  "expect": {
+    "overall_status": ["violations"],
+    "min_errors": 3,
+    "required_finding_types": [
+      "missing_canonical_file",
+      "invalid_ref",
+      "unmapped_file",
+      "capability_without_impl",
+      "impl_without_eval",
+      "eval_failing",
+      "eval_stale",
+      "open_task_issue",
+      "governance_contradiction",
+      "schema_violation",
+      "stale_doc",
+      "convention_uncertainty"
+    ],
+    "required_subject_refs": [
+      "unmapped-secret-note.md",
+      "docs/does-not-exist.md"
+    ],
+    "forbidden_finding_summaries": [
+      "payment_request is an active route",
+      "profile/current.json exists and payment_request"
+    ]
+  }
+}

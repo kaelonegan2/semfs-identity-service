@@ -38,6 +38,8 @@ For a runtime/spec designer:
 8. `specs/owner-context-to-semfs-ops.md`
 9. `specs/semfs-upsert-model.md`
 10. `specs/seed-to-midstate-maturation-path.md`
+11. `.runtime/contracts/identity-inspection-report.schema.json`
+12. `evals/coverage.json`
 
 ## Top-Level Folders
 

@@ -1,0 +1,11 @@
+{
+  "version": "2026-04-30.adversarial",
+  "contracts": {
+    "owner_onboarding": {
+      "required": ["decision.routing.next"]
+    },
+    "closeout": {
+      "required": ["decision.routing.next"]
+    }
+  }
+}

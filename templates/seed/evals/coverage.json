@@ -1,0 +1,87 @@
+{
+  "schema_version": "eval_coverage.v1",
+  "description": "Machine-readable links from active seed agents and routes to seed eval surfaces. Runtime-orchestration scenarios in the SemFS service repo are complementary and optional.",
+  "coverage": [
+    {
+      "subject_type": "suite",
+      "subject_id": "seed_conformance",
+      "eval_refs": [
+        "evals/questions.md",
+        "evals/expected-answers.md",
+        "evals/scoring-rubric.md",
+        "evals/identity-repo-reader-prompt.md"
+      ]
+    },
+    {
+      "subject_type": "route",
+      "subject_id": "owner_onboarding",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "route",
+      "subject_id": "capability_proposal",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "route",
+      "subject_id": "capability_gap",
+      "eval_refs": ["evals/questions.md"],
+      "notes": "Coverage exists, but gap-types.md disputes whether capability_gap belongs in normal dispatch."
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "owner_onboarding",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "knowledge_drafter",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "capability_gap_manager",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "capability_proposal_writer",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "runtime_orchestration_planner",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "context_collector",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "business_research_planner",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "human_review",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "stop",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "identity_evolution_manager",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "agent",
+      "subject_id": "owner_review_coordinator",
+      "eval_refs": ["evals/questions.md"]
+    }
+  ]
+}

@@ -4,6 +4,10 @@ Role: `guidance` for testing seed repo readability and conformance.
 
 These evals test whether an agent can understand the initialized Solo seed identity using only this repo.
 
+## Machine Coverage Map
+
+`evals/coverage.json` (`eval_coverage.v1`) links active agents and routes to eval surfaces so SemFS self-inspection can detect implemented capabilities without evaluations.
+
 ## What The Evals Prove
 
 - The agent can identify `seed_runtime_available`.

@@ -1,0 +1,11 @@
+{
+  "version": "2026-04-30.adversarial",
+  "facets": {
+    "owner_onboarding": {
+      "hydrate_to": "runtime_contract.facets.owner_onboarding"
+    },
+    "closeout": {
+      "hydrate_to": "runtime_contract.facets.closeout"
+    }
+  }
+}

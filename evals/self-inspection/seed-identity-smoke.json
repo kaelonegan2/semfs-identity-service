@@ -1,0 +1,17 @@
+{
+  "schema_version": "self_inspection_eval.v1",
+  "id": "seed-identity-smoke",
+  "title": "Seed identity inspection smoke",
+  "description": "The shipped seed template should be loadable and inspectable. Convention uncertainties and known seed contradictions may appear as warnings/info, but the inspector must run to completion.",
+  "suite": "self-inspection",
+  "tags": ["seed", "smoke"],
+  "identity_root": "templates/seed",
+  "identity_id": "solo-identity-seed",
+  "expect": {
+    "overall_status": ["ok", "warnings", "violations"],
+    "required_finding_types": ["convention_uncertainty"],
+    "forbidden_finding_summaries": [
+      "payment_request is an active route"
+    ]
+  }
+}
