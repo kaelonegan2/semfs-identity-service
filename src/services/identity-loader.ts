@@ -1,7 +1,7 @@
 import { IdentityMount } from "../types/core.js";
 import { readJson, readOptionalText } from "./json.js";
 
-const REQUIRED_JSON_FILES = [
+export const REQUIRED_JSON_FILES = [
   "identity_state/lifecycle/current.json",
   "identity_state/lifecycle/mode-permissions.json",
   "identity_state/orchestration/dispatch-map.json",

@@ -2,6 +2,12 @@
 
 Tracked eval scenarios live under `evals/`. They are part of the repository because they describe expected SemFS behavior across identity stages and runtime surfaces.
 
+Self-inspection scenarios live under `evals/self-inspection/` and are run with:
+
+```bash
+pnpm eval:inspection
+```
+
 Generated eval results live under `.evals/`, which is ignored by git. That keeps local/internal model benchmark history out of forks while still making the harness and public scenario definitions available to maintainers.
 
 ## Result Storage

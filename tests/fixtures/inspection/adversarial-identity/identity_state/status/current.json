@@ -1,0 +1,22 @@
+{
+  "status_version": "2026-04-30.adversarial",
+  "mode": "seed_runtime_available",
+  "identity_repo_role": "adversarial_fixture",
+  "identity": {
+    "id": "adversarial-identity",
+    "display_name": "Adversarial Identity",
+    "domain": "fixture",
+    "context_depth": "adversarial"
+  },
+  "allowed_now": ["inspect_identity_repo"],
+  "requires_human_approval": ["capability_activation"],
+  "forbidden": ["self_activate_new_capabilities"],
+  "canonical_paths": {
+    "lifecycle": "identity_state/lifecycle/current.json",
+    "agents": "identity_state/registries/agents.json",
+    "tools": "identity_state/registries/tools.json",
+    "dispatch_map": "identity_state/orchestration/dispatch-map.json",
+    "facet_policy": "identity_state/registries/facet-policy.json",
+    "profile": "identity_state/profile/current.json"
+  }
+}

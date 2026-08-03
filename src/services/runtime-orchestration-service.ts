@@ -21,6 +21,7 @@ const SUBAGENT_TYPES = new Set<SubagentType>(["inline_subagent", "parallel_subag
 const TOOL_SCOPES: Record<string, AuthScope> = {
   semfs_get_identity_status: "identity:status",
   semfs_get_manifest: "identity:read",
+  semfs_inspect_identity: "identity:read",
   semfs_get_agent: "agent:read",
   semfs_prepare_agent_action: "agent:prepare",
   semfs_authorize_agent_action: "agent:authorize",

@@ -88,6 +88,25 @@ export function createMcpServer(container: SemfsContainer, principal?: AuthPrinc
     }
   );
 
+  if (canUse("semfs_inspect_identity", "identity:read")) server.tool(
+    "semfs_inspect_identity",
+    "Deterministically inspect an identity repository for missing canonical files, broken refs, unmapped files, capability/eval gaps, open-task issues, governance contradictions, schema violations, and stale docs. Read-only; does not repair findings.",
+    {
+      identity_id: z.string().default(container.config.defaultIdentityId),
+      include_human_markdown: z.boolean().optional(),
+      eval_index: z.string().optional(),
+    },
+    async ({ identity_id, include_human_markdown, eval_index }) => {
+      const mount = container.registry.resolve(identity_id);
+      return text(
+        await container.inspection.inspect(mount, {
+          include_human_markdown: include_human_markdown ?? true,
+          eval_results_root: eval_index,
+        })
+      );
+    }
+  );
+
   if (canUseAny("semfs_apply_owner_identity_seed", ["identity:profile_write", "identity:seed_update"])) server.tool(
     "semfs_apply_owner_identity_seed",
     "Apply verified-owner seed identity direction to canonical profile, brief, README, and status surfaces. This does not activate capabilities, external actions, credentials, payments, publishing, or lifecycle changes.",

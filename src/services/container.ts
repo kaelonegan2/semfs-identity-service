@@ -6,6 +6,7 @@ import { DreamService } from "./dream-service.js";
 import { IdentityLoader } from "./identity-loader.js";
 import { IdentityProfileService } from "./identity-profile-service.js";
 import { InboundService } from "./inbound-service.js";
+import { SelfInspectionService } from "./inspection-service.js";
 import { PolicyService } from "./policy-service.js";
 import { RuntimeOrchestrationService } from "./runtime-orchestration-service.js";
 import { SafeWriter } from "./safe-writer.js";
@@ -32,6 +33,7 @@ export function createContainer() {
     writer,
     agents: new AgentService(policy),
     dreams: new DreamService(writer),
+    inspection: new SelfInspectionService(loader, policy),
     seedTemplates: new SeedTemplateService(registry),
     vectors,
     runtime,

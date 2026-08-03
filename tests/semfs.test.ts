@@ -687,6 +687,7 @@ describe("SemFS service", () => {
       "semfs_get_identity_status",
       "semfs_get_manifest",
       "semfs_get_memory_status",
+      "semfs_inspect_identity",
       "semfs_prepare_agent_action",
       "semfs_prepare_dream",
       "semfs_prepare_inbound",
@@ -708,7 +709,7 @@ describe("SemFS service", () => {
 
     await expect(listMcpToolNames(container, "public")).resolves.toEqual(["semfs_get_identity_status"]);
     await expect(listMcpToolNames(container, "readonly")).resolves.toEqual(
-      ["semfs_get_agent", "semfs_get_identity_status", "semfs_get_manifest", "semfs_get_memory_status", "semfs_prepare_inbound", "semfs_vector_search"].sort()
+      ["semfs_get_agent", "semfs_get_identity_status", "semfs_get_manifest", "semfs_get_memory_status", "semfs_inspect_identity", "semfs_prepare_inbound", "semfs_vector_search"].sort()
     );
     await expect(listMcpToolNames(container, "runtime")).resolves.toEqual(runtimeTools);
     await expect(listMcpToolNames(container, "owner_runtime")).resolves.toEqual(

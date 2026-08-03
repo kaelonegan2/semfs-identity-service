@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "gap-record.schema.json",
+  "title": "Capability Gap Record",
+  "type": "object",
+  "required": ["gap_id", "gap_type", "detected_by", "detected_at", "summary", "impact", "recommended_next_step", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "gap_id": { "type": "string" },
+    "gap_type": { "type": "string" },
+    "detected_by": { "type": "string" },
+    "detected_at": { "type": "string" },
+    "summary": { "type": "string" },
+    "impact": { "type": "string" },
+    "recommended_next_step": { "type": "string" },
+    "status": { "type": "string" }
+  }
+}

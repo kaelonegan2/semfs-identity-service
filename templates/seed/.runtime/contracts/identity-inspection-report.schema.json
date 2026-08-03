@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "semfs.seed.identity-inspection-report.schema.json",
+  "title": "Identity Inspection Report",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "identity_id",
+    "inspected_at",
+    "overall_status",
+    "counts",
+    "findings",
+    "uncertainties",
+    "checks_run"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "identity_inspection_report.v1"
+    },
+    "identity_id": { "type": "string" },
+    "inspected_at": { "type": "string" },
+    "store": { "type": "string" },
+    "overall_status": {
+      "type": "string",
+      "enum": ["ok", "warnings", "violations"]
+    },
+    "counts": {
+      "type": "object",
+      "required": ["error", "warning", "info"],
+      "additionalProperties": false,
+      "properties": {
+        "error": { "type": "integer", "minimum": 0 },
+        "warning": { "type": "integer", "minimum": 0 },
+        "info": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "checks_run": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    },
+    "summary": { "type": "string" },
+    "human_report_markdown": { "type": "string" }
+  },
+  "$defs": {
+    "finding": {
+      "type": "object",
+      "required": [
+        "finding_id",
+        "check_id",
+        "finding_type",
+        "severity",
+        "summary"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": { "type": "string" },
+        "check_id": { "type": "string" },
+        "finding_type": {
+          "type": "string",
+          "enum": [
+            "missing_canonical_file",
+            "invalid_ref",
+            "unmapped_file",
+            "capability_without_impl",
+            "impl_without_eval",
+            "eval_failing",
+            "eval_stale",
+            "open_task_issue",
+            "governance_contradiction",
+            "schema_violation",
+            "stale_doc",
+            "convention_uncertainty"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["error", "warning", "info"]
+        },
+        "subject_ref": { "type": "string" },
+        "summary": { "type": "string" },
+        "detail": { "type": "string" },
+        "recommended_next_step": { "type": "string" },
+        "related_refs": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -22,6 +22,7 @@ A seed-compatible runtime must be able to:
 - record capability gaps
 - draft inactive capability proposals
 - enforce trust, authority, approval, and side-effect boundaries
+- run deterministic identity self-inspection and emit `identity_inspection_report.v1`
 
 ## Optional Enhanced Runtime
 

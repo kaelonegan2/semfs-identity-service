@@ -27,6 +27,7 @@ Important tools:
 - `semfs_prepare_inbound`
 - `semfs_get_memory_status`
 - `semfs_get_manifest`
+- `semfs_inspect_identity`
 - `semfs_apply_owner_identity_seed`
 - `semfs_get_agent`
 - `semfs_prepare_agent_action`

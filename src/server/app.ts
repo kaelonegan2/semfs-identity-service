@@ -83,6 +83,24 @@ export async function createApp(container: SemfsContainer, options: { logger?: b
     };
   });
 
+  app.get("/v1/identities/:identity_id/inspection", async (request) => {
+    requireScope(container, request, "identity:read", "semfs_inspect_identity");
+    const mount = container.registry.resolve((request.params as Params).identity_id);
+    const query = request.query as { format?: string; eval_index?: string };
+    const report = await container.inspection.inspect(mount, {
+      include_human_markdown: query.format !== "json",
+      eval_results_root: query.eval_index,
+    });
+    if (query.format === "markdown") {
+      return {
+        identity_id: report.identity_id,
+        overall_status: report.overall_status,
+        markdown: report.human_report_markdown ?? container.inspection.toMarkdown(report),
+      };
+    }
+    return report;
+  });
+
   app.post("/v1/identities/:identity_id/profile/apply-owner-seed", async (request) => {
     requireAnyScope(container, request, ["identity:profile_write", "identity:seed_update"], "semfs_apply_owner_identity_seed");
     const mount = container.registry.resolve((request.params as Params).identity_id);

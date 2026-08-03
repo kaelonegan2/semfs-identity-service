@@ -1,0 +1,10 @@
+{
+  "version": "2026-04-30.adversarial",
+  "baseline_internal_tools": [
+    {
+      "id": "repo_read",
+      "status": "active",
+      "allowed_agents": ["owner_onboarding", "capability_gap_manager", "stop", "orphan_active_agent"]
+    }
+  ]
+}

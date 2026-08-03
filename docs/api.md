@@ -17,6 +17,7 @@ Core endpoints:
 - `GET /v1/identities/:identity_id/memory/status`
 - `GET /v1/identities/:identity_id/manifest`
 - `GET /v1/identities/:identity_id/context`
+- `GET /v1/identities/:identity_id/inspection`
 - `POST /v1/identities/:identity_id/profile/apply-owner-seed`
 - `GET /v1/identities/:identity_id/agents`
 - `GET /v1/identities/:identity_id/agents/:agent_id`
