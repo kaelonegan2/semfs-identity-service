@@ -49,7 +49,11 @@ describe("SemFS self-inspection", () => {
     expect(report.checks_run.length).toBeGreaterThan(5);
     expect(report.human_report_markdown).toContain("SemFS Identity Inspection Report");
     expect(report.findings.some((finding) => finding.finding_type === "convention_uncertainty")).toBe(true);
-    expect(report.findings.some((finding) => finding.summary.toLowerCase().includes("vector"))).toBe(false);
+    expect(
+      report.findings.some((finding) =>
+        finding.summary.toLowerCase().includes("payment_request is an active route")
+      )
+    ).toBe(false);
   });
 
   it("detects adversarial structural failures without treating vector falsehoods as truth", async () => {

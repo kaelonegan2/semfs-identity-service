@@ -69,6 +69,15 @@ const PATH_REF_KEYS = new Set([
 
 const IGNORED_UNMAPPED_PREFIXES = [".git/", "node_modules/", ".memory/", ".evals/", ".semfs/"];
 const IGNORED_UNMAPPED_FILES = new Set([".gitignore", ".DS_Store"]);
+const MAP_ROLE_TOKENS = new Set([
+  "authoritative",
+  "guidance",
+  "runtime-compatibility",
+  "proposal",
+  "example",
+  "example conformance prompts",
+  "external/vector-ref",
+]);
 
 const MATURE_CAPABILITY_PHRASES = [
   "inbound lead qualification",
@@ -230,7 +239,7 @@ export class SelfInspectionService {
       if (typeof relPath === "string" && relPath.trim()) required.add(relPath);
     }
 
-    const mapPaths = await this.pathsFromMap(mount, "MAP.md");
+    const mapPaths = await this.resolvedPathsFromMap(mount, "MAP.md", fileSet);
     for (const relPath of mapPaths) {
       if (relPath.endsWith(".json") || relPath.endsWith(".md")) required.add(relPath);
     }
@@ -404,9 +413,10 @@ export class SelfInspectionService {
     files: string[],
     maxFindings: number
   ): Promise<InspectionFinding[]> {
+    const fileSet = new Set(files);
     const mapped = new Set<string>();
     for (const mapPath of files.filter((file) => file === "MAP.md" || file.endsWith("/MAP.md"))) {
-      for (const ref of await this.pathsFromMap(mount, mapPath)) mapped.add(ref);
+      for (const ref of await this.resolvedPathsFromMap(mount, mapPath, fileSet)) mapped.add(ref);
       mapped.add(mapPath);
     }
     for (const ref of this.collectPathRefs(bundle).map((entry) => entry.value)) {
@@ -526,15 +536,17 @@ export class SelfInspectionService {
     const capabilitiesDoc = await this.readOptional(mount, "identity_state/operating_model/capabilities.md");
     if (capabilitiesDoc) {
       const lower = capabilitiesDoc.toLowerCase();
-      for (const phrase of MATURE_CAPABILITY_PHRASES) {
-        if (lower.includes(phrase) && lower.includes("active capability surface")) {
+      if (lower.includes("active capability surface")) {
+        const matched = MATURE_CAPABILITY_PHRASES.filter((phrase) => lower.includes(phrase));
+        if (matched.length) {
           findings.push(
             this.finding({
               check_id: "capability_without_impl",
               finding_type: "capability_without_impl",
               severity: "warning",
               subject_ref: "identity_state/operating_model/capabilities.md",
-              summary: `capabilities.md lists '${phrase}' under Active Capability Surface, but seed mode has no activated mature implementation`,
+              summary: "capabilities.md lists mature external-facing work under Active Capability Surface without seed implementations",
+              detail: `Matched phrases: ${matched.join("; ")}`,
               recommended_next_step: "Treat this as documentation drift or move mature capabilities to a future/inactive section.",
               related_refs: ["identity_state/status/current.md", "identity_state/registries/agents.json"],
             })
@@ -959,19 +971,32 @@ export class SelfInspectionService {
   ): Promise<InspectionFinding[]> {
     const findings: InspectionFinding[] = [];
     for (const mapPath of [...fileSet].filter((file) => file === "MAP.md" || file.endsWith("/MAP.md"))) {
+      const mapDir = path.posix.dirname(mapPath);
       for (const ref of await this.pathsFromMap(mount, mapPath)) {
-        if (!(fileSet.has(ref) || (await mount.store.exists(ref)))) {
-          findings.push(
-            this.finding({
-              check_id: "stale_docs",
-              finding_type: "stale_doc",
-              severity: "warning",
-              subject_ref: mapPath,
-              summary: `MAP references missing path: ${ref}`,
-              related_refs: [ref],
-            })
-          );
+        if (MAP_ROLE_TOKENS.has(ref.toLowerCase())) continue;
+        if (isDottedFieldPath(ref) || ref === ".memory" || ref.startsWith(".memory/")) continue;
+        if (!looksLikeRepoPath(ref) && !ref.includes(".") && !ref.includes("/")) continue;
+        const candidates = mapPathCandidates(mapDir, ref);
+        const resolved = candidates.find((candidate) => fileSet.has(candidate));
+        if (resolved) continue;
+        let exists = false;
+        for (const candidate of candidates) {
+          if (await mount.store.exists(candidate)) {
+            exists = true;
+            break;
+          }
         }
+        if (exists) continue;
+        findings.push(
+          this.finding({
+            check_id: "stale_docs",
+            finding_type: "stale_doc",
+            severity: "warning",
+            subject_ref: mapPath,
+            summary: `MAP references missing path: ${ref}`,
+            related_refs: candidates,
+          })
+        );
       }
     }
 
@@ -1048,15 +1073,45 @@ export class SelfInspectionService {
     const refs = new Set<string>();
     for (const match of text.matchAll(/`([^`]+)`/g)) {
       const value = match[1].replace(/\/+$/, "");
-      // Accept repo-relative files and top-level folder names used in MAP overviews.
       if (!value || value.includes("://") || value.includes(" ") || value.startsWith("/") || value.startsWith("../") || value === "..") {
         continue;
       }
-      if (value.includes("/") || value.endsWith(".md") || value.endsWith(".json") || value.endsWith(".jsonl") || /^[A-Za-z0-9_.-]+$/.test(value)) {
+      if (MAP_ROLE_TOKENS.has(value.toLowerCase())) continue;
+      // Accept repo-relative files/folders. Skip bare enum-like tokens unless they look like paths.
+      if (value.includes("/") || value.endsWith(".md") || value.endsWith(".json") || value.endsWith(".jsonl") || value.startsWith(".")) {
+        refs.add(value);
+        continue;
+      }
+      if (/^[A-Za-z0-9_.-]+$/.test(value) && !value.includes("_") && value === value.toLowerCase()) {
+        // Likely a top-level folder token such as identity, specs, evals.
         refs.add(value);
       }
     }
     return [...refs];
+  }
+
+  private async resolvedPathsFromMap(mount: IdentityMount, mapPath: string, fileSet: Set<string>): Promise<string[]> {
+    const mapDir = path.posix.dirname(mapPath);
+    const resolved = new Set<string>();
+    for (const ref of await this.pathsFromMap(mount, mapPath)) {
+      if (isDottedFieldPath(ref) || ref === ".memory" || ref.startsWith(".memory/")) continue;
+      const candidates = mapPathCandidates(mapDir, ref);
+      const hit = candidates.find((candidate) => fileSet.has(candidate));
+      if (hit) {
+        resolved.add(hit);
+        continue;
+      }
+      let existed = false;
+      for (const candidate of candidates) {
+        if (await mount.store.exists(candidate)) {
+          resolved.add(candidate);
+          existed = true;
+          break;
+        }
+      }
+      if (!existed) resolved.add(ref);
+    }
+    return [...resolved];
   }
 
   private async safeListFiles(mount: IdentityMount): Promise<string[]> {
@@ -1106,6 +1161,29 @@ function looksLikeRepoPath(value: string): boolean {
   if (!value || value.includes("://") || value.includes(" ")) return false;
   if (value.startsWith("/") || value.startsWith("../") || value === "..") return false;
   return value.includes("/") || value.endsWith(".md") || value.endsWith(".json") || value.endsWith(".jsonl");
+}
+
+function isDottedFieldPath(value: string): boolean {
+  if (!value.includes(".") || value.includes("/")) return false;
+  if (value.endsWith(".md") || value.endsWith(".json") || value.endsWith(".jsonl") || value.endsWith(".yaml") || value.endsWith(".yml")) {
+    return false;
+  }
+  return /^[A-Za-z0-9_.]+$/.test(value);
+}
+
+function mapPathCandidates(mapDir: string, ref: string): string[] {
+  const candidates = [ref];
+  if (mapDir && mapDir !== ".") {
+    candidates.push(path.posix.join(mapDir, ref));
+    let parent = path.posix.dirname(mapDir);
+    while (parent && parent !== "." && parent !== "/") {
+      candidates.push(path.posix.join(parent, ref));
+      const next = path.posix.dirname(parent);
+      if (next === parent) break;
+      parent = next;
+    }
+  }
+  return [...new Set(candidates)];
 }
 
 function parseGapMarkdown(text: string): Array<{ title: string; status: string; blocked: string }> {

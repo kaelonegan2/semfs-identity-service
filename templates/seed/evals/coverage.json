@@ -19,6 +19,26 @@
     },
     {
       "subject_type": "route",
+      "subject_id": "context_collect",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "route",
+      "subject_id": "clarify_intent",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "route",
+      "subject_id": "research_plan",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "route",
+      "subject_id": "knowledge_draft",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "route",
       "subject_id": "capability_proposal",
       "eval_refs": ["evals/questions.md"]
     },
@@ -27,6 +47,16 @@
       "subject_id": "capability_gap",
       "eval_refs": ["evals/questions.md"],
       "notes": "Coverage exists, but gap-types.md disputes whether capability_gap belongs in normal dispatch."
+    },
+    {
+      "subject_type": "route",
+      "subject_id": "human_review",
+      "eval_refs": ["evals/questions.md"]
+    },
+    {
+      "subject_type": "route",
+      "subject_id": "stop",
+      "eval_refs": ["evals/questions.md"]
     },
     {
       "subject_type": "agent",
